@@ -8,7 +8,7 @@ cd badminton_shop
 # 2. สร้างไฟล์ .env
 copy .env.example ลง .env
 
-# 3. ติดตั้ง PHP packages (ใช้ Docker ยืม Composer มาใช้ชั่วคราว ไม่ต้องลง PHP ในเครื่อง)
+# 3. ติดตั้ง PHP packages 
 ```
 docker run --rm -u "$(id -u):$(id -g)" \
   -v "$(pwd):/var/www/html" -w /var/www/html \
