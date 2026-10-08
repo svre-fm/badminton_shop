@@ -22,6 +22,17 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Test User', 'password' => 'password'],
         );
 
-        $this->call(ProductSeeder::class);
+        $this->call([
+            ProductSeeder::class,
+            UserSeeder::class,
+            DeliveryAddressSeeder::class,
+            CreditDebitCardSeeder::class,
+            FavoriteSeeder::class,
+            CartItemSeeder::class,
+            OrderSeeder::class,
+            OrderItemSeeder::class,
+            PaymentSeeder::class,
+            ReviewSeeder::class,
+        ]);
     }
 }
