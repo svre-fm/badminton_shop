@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('detail')->nullable();
             $table->decimal('price',10,2);
             $table->string('image',255);
-            $table->string('product_type',20);
+            $table->enum('product_type',['RACKET','STRING','GRIP','SHUTTLECOCK']);
             $table->timestamps();
         });
 

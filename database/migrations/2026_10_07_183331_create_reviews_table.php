@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('star');
             $table->date('date');
             $table->text('comment')->nullable();
+            $table->foreign('order_no')->references('order_no')->on('orders');
             $table->foreign('customer_id')->references('id')->on('users')->nullOnDelete();
             $table->foreign('product_id')->references('product_id')->on('products')->cascadeOnDelete();
             $table->unique(['customer_id','product_id','order_no']);

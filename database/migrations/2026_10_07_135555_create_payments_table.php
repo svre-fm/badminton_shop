@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\orders;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -14,13 +13,18 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id('payment_id')->primary();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->string('order_no')->unique();
-            $table->string('card_id',20)->nullable();
-            $table->decimal('amount',10,2);
-            $table->string('method',30);
+            $table->string('card_no', 20)->nullable();
+            $table->decimal('amount', 10, 2);
+            $table->string('method', 30);
             $table->timestamps();
             $table->foreign('order_no')->references('order_no')->on('orders');
-            $table->foreign('card_id')->references('card_no')->on('credit_debit_cards');
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+            $table->foreign(['user_id', 'card_no'])
+                ->references(['user_id', 'card_no'])
+                ->on('credit_debit_cards')
+                ->nullOnDelete();
         });
     }
 

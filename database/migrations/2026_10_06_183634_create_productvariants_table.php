@@ -17,8 +17,8 @@ return new class extends Migration
             $table->integer('stock')->default(0);
             $table->primary(['product_id', 'color']);
 
-            $table->foreign('product_id')->references('product_id')
-                ->on('products')->cascadeOnDelete();
+            $table->foreign('product_id')->references('product_id')->on('products')->cascadeOnDelete();
+            
         });
     }
 
