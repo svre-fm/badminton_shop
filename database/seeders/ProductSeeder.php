@@ -643,21 +643,7 @@ class ProductSeeder extends Seeder
             'flexibility' => $definition['flexibility'],
             'weight' => $definition['weight'],
             'grip_size' => $definition['grip_size'],
+            'max_tension' => $definition['max_tension'],
         ]);
-
-        $min = $definition['max_tension'] - 10;
-        $lowEnd = $min + 3;
-        $mediumEnd = $min + 7;
-
-        foreach ([
-            sprintf('Low %d-%d lbs', $min, $lowEnd),
-            sprintf('Medium %d-%d lbs', $lowEnd + 1, $mediumEnd),
-            sprintf('High %d-%d lbs', $mediumEnd + 1, $definition['max_tension']),
-        ] as $range) {
-            DB::table('racket_tensions')->insert([
-                'product_id' => $productId,
-                'tension' => $range,
-            ]);
-        }
     }
 }
