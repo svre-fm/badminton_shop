@@ -3,9 +3,10 @@
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
-    Route::redirect('settings', 'settings/profile');
+    Route::redirect('settings', 'member-information');
+    Route::redirect('settings/profile', 'member-information')->name('profile.legacy');
 
-    Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
+    Route::livewire('member-information', 'pages::settings.profile')->name('profile.edit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

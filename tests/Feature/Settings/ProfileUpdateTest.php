@@ -15,7 +15,10 @@ class ProfileUpdateTest extends TestCase
     {
         $this->actingAs($user = User::factory()->create());
 
-        $this->get(route('profile.edit'))->assertOk();
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('Member information')
+            ->assertSee('Phone number');
     }
 
     public function test_profile_information_can_be_updated(): void
@@ -27,6 +30,7 @@ class ProfileUpdateTest extends TestCase
         $response = Livewire::test('pages::settings.profile')
             ->set('name', 'Test User')
             ->set('email', 'test@example.com')
+            ->set('phone', '+1 555 010 1234')
             ->call('updateProfileInformation');
 
         $response->assertHasNoErrors();
@@ -35,6 +39,7 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertEquals('Test User', $user->name);
         $this->assertEquals('test@example.com', $user->email);
+        $this->assertEquals('+1 555 010 1234', $user->phone);
         $this->assertNull($user->email_verified_at);
     }
 
@@ -66,7 +71,7 @@ class ProfileUpdateTest extends TestCase
 
         $response
             ->assertHasNoErrors()
-            ->assertRedirect('/');
+            ->assertRedirect(route('home', absolute: false));
 
         $this->assertNull($user->fresh());
         $this->assertFalse(auth()->check());

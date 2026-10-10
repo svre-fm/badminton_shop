@@ -34,7 +34,25 @@ class RegistrationTest extends TestCase
         ]);
 
         $response->assertSessionHasNoErrors()
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('home', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_new_users_return_to_the_requested_page_after_registration(): void
+    {
+        $destination = route('shop.index', absolute: false);
+
+        $this->get(route('register', ['return_to' => $destination]))
+            ->assertOk();
+
+        $this->post(route('register.store'), [
+            'name' => 'John Doe',
+            'email' => 'return@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ])->assertSessionHasNoErrors()
+            ->assertRedirect($destination);
 
         $this->assertAuthenticated();
     }

@@ -29,7 +29,21 @@ class AuthenticationTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('home', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_users_return_to_a_protected_page_after_authenticating(): void
+    {
+        $user = User::factory()->create();
+
+        $this->get(route('cart'))->assertRedirect(route('login'));
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertRedirect(route('cart', absolute: false));
 
         $this->assertAuthenticated();
     }
