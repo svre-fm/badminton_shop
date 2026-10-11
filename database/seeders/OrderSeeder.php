@@ -47,10 +47,6 @@ class OrderSeeder extends Seeder
                     'status' => $this->statusFor($age),
                     'order_date' => $date->toDateString(),
                     'delivery_id' => $address->delivery_id,
-                    // snapshot ที่อยู่ ณ วันสั่งซื้อ
-                    'delivery_name' => $address->name,
-                    'delivery_phone' => $address->phone,
-                    'delivery_address' => $address->address,
                     'total_price' => 0,
                 ];
             }

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('color',50);
             $table->integer('quantity');
             $table->primary(['customer_id','product_id','color']);
+            $table->integer('racket_tension')->default(0);
             $table->timestamps();
             $table->foreign(['product_id','color'])->references(['product_id','color'])->on('productvariants')->cascadeOnDelete();
             $table->foreign('customer_id')->references('id')->on('users')->cascadeOnDelete();

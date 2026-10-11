@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('flexibility',30);
             $table->string('weight',20);
             $table->string('grip_size',10);
+            $table->integer('max_tension');
             
             $table->foreign('product_id')->references('product_id')->on('products')->cascadeOnDelete();
         });

@@ -14,11 +14,13 @@ class OrderItemSeeder extends Seeder
 
         $variants = DB::table('productvariants')
             ->join('products', 'products.product_id', '=', 'productvariants.product_id')
+            ->leftJoin('badminton_rackets', 'badminton_rackets.product_id', '=', 'products.product_id')
             ->get([
                 'productvariants.product_id',
                 'productvariants.color',
                 'products.price',
                 'products.product_type',
+                'badminton_rackets.max_tension',
             ])
             ->all();
 
@@ -44,6 +46,9 @@ class OrderItemSeeder extends Seeder
                     'color' => $variant->color,
                     'quantity' => $quantity,
                     'unit_price' => $variant->price, // snapshot ราคา ณ วันสั่งซื้อ
+                    'tension' => $variant->product_type === 'RACKET'
+                        ? SeedHelper::racketTension((int) $variant->max_tension)
+                        : 0,
                 ];
                 $total += $quantity * (float) $variant->price;
             }
