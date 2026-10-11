@@ -13,11 +13,16 @@
                 </p>
             </header>
 
+            {{-- ฟอร์มยังไม่ส่งข้อมูล ให้ ReviewController validate star/comment
+                 และตรวจว่าสมาชิกซื้อสินค้าจาก order นี้จริงก่อนบันทึก review --}}
             <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
                 This is a design preview. Reviews are not submitted until the review backend is connected.
             </div>
 
             <form x-data="{ rating: 0, attempted: false }" @submit.prevent="attempted = true" class="mt-7 space-y-6">
+                {{-- ReviewController รับ product_id/order_no จาก query และต้องตรวจสิทธิ์ซื้อก่อนบันทึก --}}
+                <input type="hidden" name="product_id" value="{{ request()->query('product_id') }}">
+                <input type="hidden" name="order_no" value="{{ request()->query('order_no') }}">
                 <fieldset>
                     <legend class="mb-3 text-sm font-medium text-ink">Your rating</legend>
                     <div class="flex justify-center gap-2" role="radiogroup" aria-label="Rating from 1 to 5 stars">
@@ -25,7 +30,7 @@
                             <label class="cursor-pointer">
                                 <input
                                     type="radio"
-                                    name="rating"
+                                    name="star"
                                     value="{{ $star }}"
                                     x-model.number="rating"
                                     required

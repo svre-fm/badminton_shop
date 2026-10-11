@@ -1,173 +1,34 @@
 @php
-    $categories = [
+    // product.product_type คือชนิดตาม EER; ชื่อ route ใช้ slug เพื่อคง URL ฝั่งหน้าเว็บ
+    // ProductController ส่ง product, product_variant, filter_groups และ price_range จากฐานข้อมูล
+    $product_type_by_route = [
+        'badminton-racket' => 'RACKET',
+        'badminton-string' => 'STRING',
+        'grip' => 'GRIP',
+        'shuttlecock' => 'SHUTTLECOCK',
+    ];
+    $category = request()->route('category', request()->query('category', 'badminton-racket'));
+    $category = is_string($category) && isset($product_type_by_route[$category]) ? $category : 'badminton-racket';
+    $product_type = $product_type_by_route[$category];
+    $category_titles = [
         'badminton-racket' => 'Badminton racket',
         'badminton-string' => 'Badminton string',
         'grip' => 'Grip',
         'shuttlecock' => 'Shuttlecock',
     ];
-    $category = request()->route('category', request()->query('category', 'badminton-racket'));
-    $category = is_string($category) && array_key_exists($category, $categories) ? $category : 'badminton-racket';
-    $brands = ['Yonex', 'Victor', 'Li-Ning', 'Apacs'];
-    $colors = [
-        '#111827' => 'Black',
-        '#f9c9ff' => 'Pink',
-        '#ffd982' => 'Yellow',
-        '#4072af' => 'Blue',
-        '#ef4444' => 'Red',
-        '#ffffff' => 'White',
-    ];
-
-    $filterGroups = [
-        'badminton-racket' => [
-            ['key' => 'color', 'label' => 'Color', 'type' => 'color', 'options' => $colors],
-            ['key' => 'balance', 'label' => 'Balance point', 'options' => [
-                'head-heavy' => 'Head-heavy · > 295 mm',
-                'even-balance' => 'Even-balance · 285–295 mm',
-                'head-light' => 'Head-light · < 285 mm',
-            ]],
-            ['key' => 'weight', 'label' => 'Weight', 'options' => [
-                '8u' => '8U · < 59 g',
-                '7u' => '7U · 60–69 g',
-                '6u' => '6U · 70–74 g',
-                '5u' => '5U · 75–79 g',
-                '4u' => '4U · 80–84 g',
-                '3u' => '3U · 85–89 g',
-            ]],
-            ['key' => 'flexibility', 'label' => 'Shaft flexibility', 'options' => [
-                'flexible' => 'Flexible',
-                'medium' => 'Medium',
-                'stiff' => 'Stiff',
-            ]],
-            ['key' => 'grip', 'label' => 'Grip size', 'options' => [
-                'g5' => 'G5 · Larger grip',
-                'g6' => 'G6 · Smaller grip',
-            ]],
-            ['key' => 'tension', 'label' => 'String tension', 'options' => [
-                '20-23' => '20–23 lbs',
-                '24-26' => '24–26 lbs',
-                '27-plus' => '> 27 lbs',
-            ]],
-        ],
-        'badminton-string' => [
-            ['key' => 'thickness', 'label' => 'Thickness', 'options' => [
-                'thin' => 'Thin · 0.61–0.65 mm',
-                'standard' => 'Standard · 0.66–0.68 mm',
-                'thick' => 'Thick · 0.69–0.70 mm',
-            ]],
-            ['key' => 'characteristic', 'label' => 'String characteristics', 'options' => [
-                'repulsion' => 'Repulsion power',
-                'control' => 'Control',
-                'durability' => 'Durability',
-                'hitting-sound' => 'Hitting sound',
-            ]],
-            ['key' => 'tension', 'label' => 'String tension', 'options' => [
-                '20-23' => '20–23 lbs',
-                '24-26' => '24–26 lbs',
-                '27' => '27 lbs',
-            ]],
-        ],
-        'grip' => [
-            ['key' => 'color', 'label' => 'Color', 'type' => 'color', 'options' => $colors],
-            ['key' => 'type', 'label' => 'Type', 'options' => [
-                'overgrip' => 'Overgrip',
-                'replacement' => 'Replacement',
-                'towel-grip' => 'Towel grip',
-            ]],
-            ['key' => 'thickness', 'label' => 'Thickness', 'options' => [
-                '1.5' => '1.5 mm',
-                '1.75' => '1.75 mm',
-                '2.0' => '2.00 mm',
-            ], 'showWhen' => ['key' => 'type', 'value' => 'replacement']],
-            ['key' => 'material', 'label' => 'Material', 'options' => [
-                'polyurethane' => 'Polyurethane',
-                'towel' => 'Towel',
-            ]],
-            ['key' => 'feel', 'label' => 'Polyurethane feel', 'options' => [
-                'tacky' => 'Tacky feel',
-                'dry' => 'Dry feel',
-                'perforated' => 'Perforated',
-            ], 'showWhen' => ['key' => 'material', 'value' => 'polyurethane']],
-        ],
-        'shuttlecock' => [
-            ['key' => 'type', 'label' => 'Type', 'options' => [
-                'feather' => 'Feather',
-                'nylon' => 'Nylon',
-            ]],
-            ['key' => 'feather', 'label' => 'Feather', 'options' => [
-                'goose' => 'Goose feather',
-                'duck' => 'Duck feather',
-            ], 'showWhen' => ['key' => 'type', 'value' => 'feather']],
-            ['key' => 'speed', 'label' => 'Speed rating', 'options' => [
-                '75' => 'Speed 75 · เบา',
-                '76' => 'Speed 76 · เร็วปกติ',
-                '77' => 'Speed 77 · เร็วมาก',
-            ]],
-        ],
-    ];
-
-    $productAttributes = [
-        'badminton-racket' => [
-            'balance' => ['head-heavy', 'even-balance', 'head-light'],
-            'weight' => ['8u', '7u', '6u', '5u', '4u', '3u'],
-            'flexibility' => ['flexible', 'medium', 'stiff'],
-            'grip' => ['g5', 'g6'],
-            'tension' => ['20-23', '24-26', '27-plus'],
-        ],
-        'badminton-string' => [
-            'thickness' => ['thin', 'standard', 'thick'],
-            'characteristic' => ['repulsion', 'control', 'durability', 'hitting-sound'],
-            'tension' => ['20-23', '24-26', '27'],
-        ],
-        'grip' => [
-            'type' => ['overgrip', 'replacement', 'replacement', 'towel-grip'],
-            'thickness' => ['1.5', '1.75', '2.0'],
-            'material' => ['polyurethane', 'polyurethane', 'polyurethane', 'towel'],
-            'feel' => ['tacky', 'dry', 'perforated'],
-        ],
-        'shuttlecock' => [
-            'type' => ['feather', 'feather', 'nylon'],
-            'feather' => ['goose', 'duck'],
-            'speed' => ['75', '76', '77'],
-        ],
-    ];
-    $categoryColors = array_keys($colors);
-    $prices = [1890, 2490, 3290, 890, 1590, 2790, 3490, 1190, 1990, 2990, 990, 2290];
-    $priceMin = min($prices);
-    $priceMax = max($prices);
-    $productBrands = ['Yonex', 'Victor', 'Li-Ning', 'Apacs'];
-    $categoryTitles = $categories;
-    $activeFilters = $filterGroups[$category];
-    $filterKeys = array_column($activeFilters, 'key');
-    $activeOptions = collect($activeFilters)->mapWithKeys(fn ($filter) => [$filter['key'] => $filter['options']])->all();
-    $attributeValues = $productAttributes[$category];
-    $products = collect(range(1, 12))->map(function ($i) use ($category, $categories, $categoryColors, $prices, $productBrands, $attributeValues) {
-        $product = [
-            'name' => match ($category) {
-                'badminton-string' => 'Badminton string '.str_pad($i, 2, '0', STR_PAD_LEFT),
-                'grip' => 'Racket grip '.str_pad($i, 2, '0', STR_PAD_LEFT),
-                'shuttlecock' => 'Shuttlecock '.str_pad($i, 2, '0', STR_PAD_LEFT),
-                default => 'Badminton racket '.str_pad($i, 2, '0', STR_PAD_LEFT),
-            },
-            'slug' => $category.'-'.$i,
-            'brand' => $productBrands[($i - 1) % count($productBrands)],
-            'price' => $prices[($i - 1) % count($prices)],
-            'rating' => 4.9,
-            'color' => $categoryColors[($i - 1) % count($categoryColors)],
-            'image' => $category === 'badminton-racket' ? asset('images/badminton-racket.jpg') : null,
-        ];
-
-        foreach ($attributeValues as $key => $values) {
-            $product[$key] = $values[($i - 1) % count($values)];
-        }
-
-        return $product;
-    })->values();
+    $brands = collect($brands ?? [])->all();
+    $filter_groups = $filter_groups ?? [];
+    $price_range = $price_range ?? [];
+    $price_min = isset($price_range['min']) ? (float) $price_range['min'] : 0;
+    $price_max = isset($price_range['max']) ? (float) $price_range['max'] : 0;
+    $active_filters = $filter_groups[$product_type] ?? [];
+    $products = collect($products ?? []);
 
     $requestedBrands = array_filter((array) request()->query('brand', []), 'is_string');
     $selectedBrands = array_values(array_intersect($requestedBrands, $brands));
     $requestedFilters = request()->query('filters', []);
     $requestedFilters = is_array($requestedFilters) ? $requestedFilters : [];
-    $selectedFilters = collect($activeFilters)->mapWithKeys(function ($filter) use ($requestedFilters) {
+    $selectedFilters = collect($active_filters)->mapWithKeys(function ($filter) use ($requestedFilters) {
         $requested = $requestedFilters[$filter['key']] ?? [];
         $requested = is_array($requested) ? $requested : [$requested];
 
@@ -175,47 +36,49 @@
 
         return [$filter['key'] => array_values(array_intersect($requested, array_keys($filter['options'])))];
     })->all();
-    foreach ($activeFilters as $filter) {
+    foreach ($active_filters as $filter) {
         if (isset($filter['showWhen']) && ! in_array($filter['showWhen']['value'], $selectedFilters[$filter['showWhen']['key']], true)) {
             $selectedFilters[$filter['key']] = [];
         }
     }
-    $priceGap = 200;
-    $minPrice = is_numeric(request()->query('min')) ? max($priceMin, min($priceMax, (float) request()->query('min'))) : null;
-    $maxPrice = is_numeric(request()->query('max')) ? max($priceMin, min($priceMax, (float) request()->query('max'))) : null;
+    $price_gap = isset($price_gap) ? (float) $price_gap : 0;
+    $minPrice = is_numeric(request()->query('min')) ? max($price_min, min($price_max, (float) request()->query('min'))) : null;
+    $maxPrice = is_numeric(request()->query('max')) ? max($price_min, min($price_max, (float) request()->query('max'))) : null;
 
-    if ($minPrice !== null && $maxPrice === null && $minPrice > $priceMax - $priceGap) {
-        $minPrice = $priceMax - $priceGap;
-    } elseif ($minPrice === null && $maxPrice !== null && $maxPrice < $priceMin + $priceGap) {
-        $maxPrice = $priceMin + $priceGap;
-    } elseif ($minPrice !== null && $maxPrice !== null && $maxPrice - $minPrice < $priceGap) {
-        if ($minPrice + $priceGap <= $priceMax) {
-            $maxPrice = $minPrice + $priceGap;
+    if ($price_gap > 0 && $minPrice !== null && $maxPrice === null && $minPrice > $price_max - $price_gap) {
+        $minPrice = $price_max - $price_gap;
+    } elseif ($price_gap > 0 && $minPrice === null && $maxPrice !== null && $maxPrice < $price_min + $price_gap) {
+        $maxPrice = $price_min + $price_gap;
+    } elseif ($price_gap > 0 && $minPrice !== null && $maxPrice !== null && $maxPrice - $minPrice < $price_gap) {
+        if ($minPrice + $price_gap <= $price_max) {
+            $maxPrice = $minPrice + $price_gap;
         } else {
-            $minPrice = $maxPrice - $priceGap;
+            $minPrice = $maxPrice - $price_gap;
         }
     }
 @endphp
 
-<x-layouts.shop :title="$categories[$category]" active="shop">
+<x-layouts.shop :title="$category_titles[$category]" active="shop">
     <div
-        class="mt-8 grid gap-6 lg:grid-cols-[17rem_1fr] lg:gap-8"
+        class="mt-8 grid gap-6 lg:gap-8"
+        :class="products.length ? 'lg:grid-cols-[17rem_1fr]' : 'lg:grid-cols-1'"
         x-data="{
             category: @js($category),
-            categoryTitles: @js($categoryTitles),
+            product_type: @js($product_type),
+            categoryTitles: @js($category_titles),
             products: @js($products),
             brandOptions: @js($brands),
-            groups: @js($activeFilters),
+            groups: @js($active_filters),
             filters: {
                 brand: @js($selectedBrands),
                 ...@js($selectedFilters),
                 min: @js($minPrice),
                 max: @js($maxPrice),
             },
-            priceMin: @js($priceMin),
-            priceMax: @js($priceMax),
+            priceMin: @js($price_min),
+            priceMax: @js($price_max),
             priceStep: 50,
-            priceGap: @js($priceGap),
+            priceGap: @js($price_gap),
             draggingPriceHandle: null,
             sort: 'latest',
             sortOpen: false,
@@ -320,7 +183,9 @@
             },
             matchesValue(product, key, values) {
                 if (!values.length) return true;
-                const productValue = product[key];
+                const productValue = key === 'color'
+                    ? (product.product_variants ?? []).map(product_variant => product_variant.color)
+                    : product[key];
                 return Array.isArray(productValue)
                     ? values.some(value => productValue.includes(value))
                     : values.includes(String(productValue));
@@ -335,9 +200,10 @@
                     return matchesBrand && matchesGroups && matchesMin && matchesMax;
                 });
 
+                if (this.sort === 'latest') results.sort((a, b) => b.product_id - a.product_id);
+                if (this.sort === 'sales') results.sort((a, b) => (b.sales_count ?? 0) - (a.sales_count ?? 0));
                 if (this.sort === 'low') results.sort((a, b) => a.price - b.price);
                 if (this.sort === 'high') results.sort((a, b) => b.price - a.price);
-                if (this.sort === 'sales') results.reverse();
 
                 return results;
             },
@@ -395,7 +261,7 @@
             },
         }"
     >
-        <aside class="h-fit rounded-2xl border border-mist bg-page p-4 sm:p-5" aria-label="Product filters">
+        <aside x-show="products.length" class="h-fit rounded-2xl border border-mist bg-page p-4 sm:p-5" aria-label="Product filters">
             <div class="mb-4 flex items-center justify-between">
                 <h2 class="text-xl font-bold text-ink">Filter products</h2>
                 <button
@@ -460,7 +326,7 @@
                     </section>
                 </template>
 
-                <section class="py-3" x-data="{ open: true }">
+                <section x-show="priceMax > priceMin" class="py-3" x-data="{ open: true }">
                     <button type="button" @click="open = !open" :aria-expanded="open" class="flex w-full items-center justify-between font-semibold text-ink">
                         <span>Price range</span>
                         <svg class="size-4 text-muted transition-transform duration-200" :class="open ? 'rotate-90' : ''" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -619,7 +485,7 @@
             </div>
 
             <div x-show="results.length" class="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:gap-6 md:grid-cols-3 xl:grid-cols-4">
-                <template x-for="product in results" :key="product.slug">
+                <template x-for="product in results" :key="product.product_id">
                     <article class="group relative w-full">
                         <div class="relative aspect-square overflow-hidden rounded-xl bg-tile ring-2 ring-transparent transition group-hover:ring-ink">
                             <template x-if="product.image">
@@ -628,8 +494,8 @@
                             <template x-if="!product.image">
                                 <div class="grid size-full place-items-center bg-page text-sm font-medium text-muted" x-text="categoryTitles[category]"></div>
                             </template>
-                            <a :href="'/product/' + category + '/' + product.slug" class="absolute inset-0 z-0" :aria-label="product.name"></a>
-                            <span class="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded border border-star/60 bg-amber-50 px-1.5 text-xs font-medium">
+                            <a :href="'/product/' + category + '/' + product.product_id" class="absolute inset-0 z-0" :aria-label="product.name"></a>
+                            <span x-show="product.rating !== null && product.rating !== undefined" class="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded border border-star/60 bg-amber-50 px-1.5 text-xs font-medium">
                                 <span class="text-star">★</span><span x-text="product.rating"></span>
                             </span>
                         </div>
@@ -638,9 +504,11 @@
                             <h2 class="truncate font-medium text-ink" x-text="product.name"></h2>
                             <span class="shrink-0 text-muted" x-text="'฿' + new Intl.NumberFormat('th-TH').format(product.price)"></span>
                         </div>
-                        <template x-if="category === 'badminton-racket'">
+                        <template x-if="product_type === 'RACKET' && product.product_variants?.length">
                             <div class="mt-2 flex items-center gap-1.5" aria-label="Product color">
-                                <span class="size-3 rounded-full border border-black/10" :style="'background-color: ' + product.color"></span>
+                                <template x-for="product_variant in product.product_variants" :key="product_variant.product_id + product_variant.color">
+                                    <span class="size-3 rounded-full border border-black/10" :style="'background-color: ' + product_variant.color" :title="product_variant.color"></span>
+                                </template>
                             </div>
                         </template>
                     </article>
@@ -648,9 +516,9 @@
             </div>
 
             <div x-show="!results.length" x-cloak class="mt-8 rounded-2xl border border-dashed border-mist px-6 py-16 text-center">
-                <p class="text-lg font-semibold text-ink">No products match these filters</p>
-                <p class="mt-2 text-sm text-muted">Try changing or clearing your selected filters.</p>
-                <button type="button" @click="clearFilters()" class="mt-4 rounded-full bg-ink px-5 py-2 text-sm text-white">Clear filters</button>
+                <p class="text-lg font-semibold text-ink" x-text="products.length ? 'No products match these filters' : 'No products are available in this category yet.'"></p>
+                <p x-show="products.length" class="mt-2 text-sm text-muted">Try changing or clearing your selected filters.</p>
+                <button x-show="products.length" type="button" @click="clearFilters()" class="mt-4 rounded-full bg-ink px-5 py-2 text-sm text-white">Clear filters</button>
             </div>
         </section>
     </div>

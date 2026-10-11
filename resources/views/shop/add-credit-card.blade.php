@@ -10,6 +10,8 @@
             <p class="mt-2 text-sm leading-6 text-muted">Add a card for a faster checkout experience.</p>
         </header>
 
+        {{-- ฟอร์มนี้เป็น preview ห้ามเก็บเลขบัตรเต็มหรือ CVV ในฐานข้อมูลร้าน
+             ให้ PaymentMethodController ต่อ payment provider แบบ tokenization และเก็บเฉพาะ token/reference ที่ปลอดภัย --}}
         <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
             This is a design preview and is not connected to a payment provider. Do not enter real card details.
             Card data must be handled by a secure payment provider, not stored directly by the shop.

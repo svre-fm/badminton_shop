@@ -1,28 +1,37 @@
 @php
-    $allItems = collect(range(1, 16));
-    $itemsPerPage = 4;
-    $pageCount = (int) ceil($allItems->count() / $itemsPerPage);
-    $requestedPage = filter_var(request()->query('page', 1), FILTER_VALIDATE_INT);
-    $currentPage = min($pageCount, max(1, $requestedPage === false ? 1 : $requestedPage));
-    $items = $allItems->forPage($currentPage, $itemsPerPage);
+    // FavoriteController ต้องส่ง Laravel paginator ของรายการโปรดจริงที่เป็นของสมาชิกปัจจุบัน
+    $favorites = $favorites ?? collect();
 @endphp
 <x-layouts.shop title="Favorites">
-    <h1 class="mt-8 text-3xl font-bold">Your Favorite Products ({{ $allItems->count() }})</h1>
+    <h1 class="mt-8 text-3xl font-bold">Your Favorite Products ({{ method_exists($favorites, 'total') ? $favorites->total() : $favorites->count() }})</h1>
 
-    @if ($allItems->isEmpty())
+    @if ($favorites->isEmpty())
         <p class="mt-10 text-muted">No favorites yet. Tap the heart on a product to save it here.</p>
     @else
         <div class="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4 xl:grid-cols-5">
-            @foreach ($items as $i)
+            @foreach ($favorites as $favorite)
+                @php
+                    $product = data_get($favorite, 'product');
+                    $category = match (data_get($product, 'product_type')) {
+                        'RACKET' => 'badminton-racket',
+                        'STRING' => 'badminton-string',
+                        'GRIP' => 'grip',
+                        'SHUTTLECOCK' => 'shuttlecock',
+                        default => 'badminton-racket',
+                    };
+                @endphp
                 <x-shop.product-card
-                    name="Racket {{ $i }}"
-                    :price="100"
-                    :rating="4.9"
+                    :name="data_get($product, 'name')"
+                    :price="data_get($product, 'price')"
+                    :image="data_get($product, 'image')"
+                    :rating="data_get($product, 'rating')"
                     :favorited="true"
-                    :href="route('shop.product', ['category' => 'badminton-racket', 'slug' => 'badminton-racket-'.$i])"
+                    :href="route('shop.product', ['category' => $category, 'product_id' => data_get($product, 'product_id')])"
                 />
             @endforeach
         </div>
-        <x-shop.pagination :pages="$pageCount" :current="$currentPage" />
+        @if (method_exists($favorites, 'lastPage') && $favorites->lastPage() > 1)
+            <x-shop.pagination :pages="$favorites->lastPage()" :current="$favorites->currentPage()" />
+        @endif
     @endif
 </x-layouts.shop>

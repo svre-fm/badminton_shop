@@ -1,17 +1,7 @@
 @php
-    // TODO: replace with real data from the controller / Livewire component
-    $categories = [
-        ['name' => 'Badminton racket', 'slug' => 'badminton-racket', 'image' => 'badminton-racket-icon.png'],
-        ['name' => 'Badminton string', 'slug' => 'badminton-string', 'image' => 'badminton-string-icon.png'],
-        ['name' => 'Grip',             'slug' => 'grip',             'image' => 'grip-icon.png'],
-        ['name' => 'Shuttlecock',      'slug' => 'shuttlecock',      'image' => 'shuttlecock-icon.png'],
-    ];
-    $bestSellers = collect(range(1, 8))->map(fn ($i) => [
-        'name' => "Racket $i",
-        'price' => 100,
-        'image' => asset('images/badminton-racket.jpg'),
-        'href' => route('shop.product', ['category' => 'badminton-racket', 'slug' => 'sample']),
-    ]);
+    // HomeController ต้องส่ง categories และ bestSellers จากฐานข้อมูล; หน้านี้ไม่มีข้อมูลสินค้า/หมวดจำลอง
+    $categories = collect($categories ?? []);
+    $bestSellers = collect($bestSellers ?? []);
 @endphp
 
 <x-layouts.shop title="Home" active="home" :full-width="true">
@@ -25,6 +15,7 @@
         <section class="mt-10 text-center sm:mt-14" aria-labelledby="cat-title">
             <h2 id="cat-title" class="text-3xl font-bold sm:text-4xl">Category</h2>
 
+            @if ($categories->isNotEmpty())
             <ul class="mt-6 flex flex-wrap justify-center gap-4 sm:mt-8 sm:gap-8">
                 @foreach ($categories as $c)
                     <li>
@@ -39,9 +30,13 @@
                     </li>
                 @endforeach
             </ul>
+            @else
+                <p class="mt-6 text-sm text-muted">Product categories will appear here when available.</p>
+            @endif
         </section>
 
         {{-- Best seller carousel --}}
+        @if ($bestSellers->isNotEmpty())
         <section class="mt-12 sm:mt-16" x-data="{
             el: null, canPrev: false, canNext: true,
             init() { this.el = this.$refs.track; this.update(); },
@@ -93,5 +88,6 @@
                 @endforeach
             </div>
         </section>
+        @endif
     </div>
 </x-layouts.shop>

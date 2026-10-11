@@ -1,5 +1,6 @@
 @php
     $editing = request()->routeIs('address.edit');
+    $delivery_address = $delivery_address ?? null;
 @endphp
 
 <x-layouts.shop :title="$editing ? 'Edit address' : 'Add address'">
@@ -18,6 +19,8 @@
             </p>
         </header>
 
+        {{-- ใช้ delivery_address.name/phone/address; Backend ต้องกำหนด customer_id จากสมาชิกที่ยืนยันตัวตนแล้ว --}}
+        {{-- ตอนแก้ไข DeliveryAddressController ต้องโหลด delivery_address ของเจ้าของเท่านั้น และทำ store/update/delete --}}
         <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
             This is a design preview. Address details are not saved until the backend is connected.
             @if ($editing)
@@ -30,9 +33,11 @@
                 <label for="address-name" class="mb-2 block text-sm font-medium text-ink">Name</label>
                 <input
                     id="address-name"
+                    name="name"
                     type="text"
                     autocomplete="name"
                     required
+                    value="{{ old('name', data_get($delivery_address, 'name')) }}"
                     class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                     placeholder="Full name"
                 >
@@ -42,9 +47,11 @@
                 <label for="address-phone" class="mb-2 block text-sm font-medium text-ink">Phone number</label>
                 <input
                     id="address-phone"
+                    name="phone"
                     type="tel"
                     autocomplete="tel"
                     required
+                    value="{{ old('phone', data_get($delivery_address, 'phone')) }}"
                     class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                     placeholder="Phone number"
                 >
@@ -54,18 +61,14 @@
                 <label for="address-text" class="mb-2 block text-sm font-medium text-ink">Address</label>
                 <textarea
                     id="address-text"
+                    name="address"
                     rows="4"
                     autocomplete="street-address"
                     required
                     class="w-full resize-y rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                     placeholder="House number, street, district, province, postal code"
-                ></textarea>
+                >{{ old('address', data_get($delivery_address, 'address')) }}</textarea>
             </div>
-
-            <label class="flex cursor-pointer items-center gap-3 text-sm text-ink">
-                <input type="checkbox" class="size-4 rounded border-muted accent-brand focus:ring-brand">
-                Set as default address
-            </label>
 
             <p x-cloak x-show="attempted" role="status" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                 Preview only: no address was saved. Backend persistence is not connected yet.

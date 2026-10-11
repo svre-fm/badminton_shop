@@ -40,7 +40,7 @@ class IntendedRedirectTest extends TestCase
 
     public function test_guest_cart_link_from_a_product_returns_to_that_product_after_login(): void
     {
-        $productUrl = route('shop.product', ['category' => 'badminton-racket', 'slug' => 'sample'], false);
+        $productUrl = route('shop.product', ['category' => 'badminton-racket', 'product_id' => 1], false);
 
         $this->get($productUrl)
             ->assertOk()

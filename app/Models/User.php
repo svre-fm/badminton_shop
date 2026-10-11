@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +32,14 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
+    /*
+     * จุดนี้คือบัญชีที่ใช้เข้าสู่ระบบ Laravel ปัจจุบัน โดยอ้างอิง `users.id`
+     * และผูกกับรหัสผ่าน, Passkey และ Two-factor authentication
+     * ใน EER ของกลุ่มใช้ `customer.customer_id` ให้ทีม Backend กำหนดความสัมพันธ์
+     * ระหว่างสองคีย์นี้ก่อนสร้างตารางหรือเปลี่ยน primary key
+     * ห้ามสร้างบัญชีลูกค้าสำหรับคนเดิมซ้ำอีกชุด เพราะจะทำให้ระบบ login แยกกัน
+     */
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 

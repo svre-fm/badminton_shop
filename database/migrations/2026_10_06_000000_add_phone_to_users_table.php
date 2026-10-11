@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Profile เก็บเบอร์โทรบัญชีเป็น optional field ใน `users`
+        // ให้ทีม Backend เทียบกับ `delivery_address.phone` ใน EER ว่าควรเก็บทั้งสองจุดหรือไม่
         Schema::table('users', function (Blueprint $table) {
             $table->string('phone', 32)->nullable()->after('email');
         });

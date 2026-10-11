@@ -1,3 +1,4 @@
+{{-- ปุ่มนี้ยังสลับสถานะด้วย Alpine ใน browser เท่านั้น ให้เรียก FavoriteController และรับสถานะจากฐานข้อมูล --}}
 <button type="button" x-data="{ on: false }" @click="on = !on" :aria-pressed="on" aria-label="Favorite"
         :class="on ? 'text-heart' : 'text-heart/60'">
     <svg class="size-9" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="currentColor"

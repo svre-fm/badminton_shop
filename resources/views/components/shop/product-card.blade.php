@@ -1,11 +1,11 @@
 @props([
-    'name' => 'Name',
-    'price' => 100,
+    'name' => null,
+    'price' => null,
     'image' => null,
     'rating' => null,
     'favorited' => null,   // null = hide heart
     'colors' => [],
-    'href' => '/product/badminton-racket/sample',
+    'href' => null,
 ])
 
 <article class="group relative w-full">
@@ -25,6 +25,7 @@
                     </span>
                 @endif
                 @if ($favorited !== null)
+                    {{-- ตอนนี้หัวใจเปลี่ยนแค่สถานะบนหน้าจอ ให้เชื่อม FavoriteController เพื่อบันทึก favorite จริง --}}
                     <button type="button" aria-label="Toggle favorite" aria-pressed="{{ $favorited ? 'true' : 'false' }}"
                             x-data="{ on: {{ $favorited ? 'true' : 'false' }} }" @click.stop="on = !on"
                             :class="on ? 'text-heart' : 'text-ink/60'">

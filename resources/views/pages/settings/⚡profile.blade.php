@@ -25,6 +25,9 @@ new #[Layout('components.layouts.shop')] #[Title('My profile')] class extends Co
      */
     public function mount(): void
     {
+        // ฟอร์มนี้แก้ข้อมูลบัญชี `users` ที่ login อยู่โดยตรง
+        // ถ้า Backend map ผู้ใช้นี้กับ EER `customer` ให้คงบัญชี login เดิมไว้
+        // และเชื่อม relation ด้วย mapping ที่ทีม Backend ตกลง ไม่สร้าง customer login ซ้ำ
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
         $this->phone = Auth::user()->phone ?? '';
