@@ -2,17 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\products; // เรียกใช้ Model 'products' ของคุณ
+use App\Models\products;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    /**
+     * ตั้งค่าตัวกรองสเปคของแต่ละหมวด
+     *
+     * fields : คอลัมน์ในตารางย่อย => ชื่อพารามิเตอร์ใน URL (แยกกันเพราะ "type" ชนกับหมวดสินค้า)
+     * multi  : คอลัมน์ที่เก็บหลายค่าในช่องเดียว คั่นด้วย "; " เช่น
+     *          "Repulsion power; medium feeling; multifilament" (ต้องแยกค่าก่อนนับ/กรอง)
+     *
+     * ชื่อตารางจริงไม่ได้ hardcode: ดึงจาก relation ใน Model products
+     * (badminton_rackets, badminton_strings, shuttlecocks, grips)
+     */
     protected $typeConfigs = [
         'RACKET' => [
-            'table'    => 'badminton_racket',
             'relation' => 'badmintonRacket',
             'with'     => ['badmintonRacket'],
-            'fields'   => [   // คอลัมน์ในฐานข้อมูล => ชื่อพารามิเตอร์ใน URL
+            'fields'   => [
                 'balance_point' => 'balance_point',
                 'shaft'         => 'shaft',
                 'flexibility'   => 'flexibility',
@@ -21,16 +31,15 @@ class ProductController extends Controller
             ],
         ],
         'STRING' => [
-            'table'    => 'badminton_string',
             'relation' => 'badmintonString',
             'with'     => ['badmintonString'],
             'fields'   => [
                 'thickness'             => 'thickness',
                 'string_characteristic' => 'string_characteristic',
             ],
+            'multi'    => ['string_characteristic'],
         ],
         'SHUTTLECOCK' => [
-            'table'    => 'shuttlecock',
             'relation' => 'shuttlecock',
             'with'     => ['shuttlecock'],
             'fields'   => [
@@ -39,7 +48,6 @@ class ProductController extends Controller
             ],
         ],
         'GRIP' => [
-            'table'    => 'grip',
             'relation' => 'grip',
             'with'     => ['grip'],
             'fields'   => [
@@ -52,12 +60,15 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $selectedType = $request->query('type') ? strtoupper($request->query('type')) : null;
-        
-        if (!isset($this->typeConfigs[$selectedType])) { $selectedType = null; }
+        if ($selectedType && ! isset($this->typeConfigs[$selectedType])) {
+            $selectedType = null;   // หมวดที่ไม่รู้จัก = แสดงทุกหมวด
+        }
 
-        // เรียกใช้ products Model
         $query = products::query();
 
+        // ----------------------------------------------------
+        // A. ตัวกรองทั่วไป (ใช้ได้กับทุกหมวด)
+        // ----------------------------------------------------
         if ($request->filled('min_price')) {
             $query->where('price', '>=', $request->min_price);
         }
@@ -67,51 +78,70 @@ class ProductController extends Controller
         if ($request->filled('brand')) {
             $query->whereIn('brand', (array) $request->brand);
         }
-        if ($request->filled('color')) {
-            $query->whereHas('variants', fn ($q) => $q->whereIn('color', (array) $request->color));
+
+        $colors = $request->filled('color') ? (array) $request->color : null;
+        if ($colors) {
+            $query->whereHas('variants', fn ($q) => $this->whereColorIn($q, $colors));
         }
 
         // ----------------------------------------------------
-        // B. กรองข้อมูลสเปคตารางย่อยตามประเภทสินค้า
+        // B. ตัวกรองสเปคของตารางย่อยตามหมวด
         // ----------------------------------------------------
-        if ($selectedType && isset($this->typeConfigs[$selectedType])) {
+        if ($selectedType) {
             $config = $this->typeConfigs[$selectedType];
 
             $query->where('product_type', $selectedType);
             $query->with($config['with']);
 
             $query->whereHas($config['relation'], function ($q) use ($request, $config) {
+                $multi = $config['multi'] ?? [];
+
                 foreach ($config['fields'] as $column => $param) {
-                    if ($request->filled($param)) {
-                        $q->whereIn($column, (array) $request->input($param));
+                    if (! $request->filled($param)) {
+                        continue;
+                    }
+
+                    $values = (array) $request->input($param);
+
+                    if (in_array($column, $multi, true)) {
+                        // คอลัมน์หลายค่า: เลือกหลายตัวเลือก = มีลักษณะใดลักษณะหนึ่ง (OR)
+                        $q->where(function ($w) use ($column, $values) {
+                            foreach ($values as $value) {
+                                $w->orWhereRaw(
+                                    "CONCAT('; ', `{$column}`, ';') LIKE ?",
+                                    ['%; ' . $this->escapeLike($value) . ';%']
+                                );
+                            }
+                        });
+                    } else {
+                        $q->whereIn($column, $values);
                     }
                 }
             });
         } else {
-            $query->with(['badmintonRacket', 'badmintonString', 'shuttlecock', 'grip']);
+            $query->with(array_merge(...array_column($this->typeConfigs, 'with')));
         }
 
-        $query->with(['variants' => function ($q) use ($request) {
-            if ($request->filled('color')) {
-                $q->whereIn('color', (array) $request->color);
+        // variants โหลดครั้งเดียวทุกกรณี และแสดงเฉพาะสีที่กรองเมื่อมีการเลือกสี
+        $query->with(['variants' => function ($q) use ($colors) {
+            if ($colors) {
+                $this->whereColorIn($q, $colors);
             }
         }]);
 
-        $sort = $request->query('sort', 'latest');
-
-        switch ($sort) {
+        // ----------------------------------------------------
+        // C. เรียงลำดับ
+        // ----------------------------------------------------
+        switch ($request->query('sort', 'latest')) {
             case 'price_low':
-                // ราคาน้อยไปมาก
                 $query->orderBy('price', 'asc');
                 break;
 
             case 'price_high':
-                // ราคามากไปน้อย
                 $query->orderBy('price', 'desc');
                 break;
 
             case 'top_sale':
-                // ขายดีที่สุด: ใช้ withSum คำนวณผลรวมของคอลัมน์ quantity ใน relation 'orderItems'
                 $query->withSum('orderItems', 'quantity')
                       ->orderBy('order_items_sum_quantity', 'desc');
                 break;
@@ -121,35 +151,103 @@ class ProductController extends Controller
                 break;
         }
 
-        // เรียงตาม primaryKey 'product_id'
-        $products = $query->orderByDesc('created_at')->orderByDesc('product_id')->paginate(1000)->withQueryString();
+        // ลำดับรองเสมอ เพื่อให้แบ่งหน้าเสถียร
+        $products = $query->orderByDesc('created_at')
+                          ->orderByDesc('product_id')
+                          ->paginate(1000)
+                          ->withQueryString();
 
+        // Showing {{ $products->total() }} result from total {{ $totalInCategory }}
         $totalInCategory = products::query()
-            ->when($selectedType && isset($this->typeConfigs[$selectedType]),
-                fn ($q) => $q->where('product_type', $selectedType))
+            ->when($selectedType, fn ($q) => $q->where('product_type', $selectedType))
             ->count();
-        
-        //Showing <b>{{ $products->total() }}</b> result from total <b>{{ $totalInCategory }}</b> เรียกใน blade
 
-        $facets = ($selectedType && isset($this->typeConfigs[$selectedType])) ? $this->buildFacets($selectedType) : [];
-        
+        $facets       = $selectedType ? $this->buildFacets($selectedType) : [];
         $commonFacets = $this->buildCommonFacets($selectedType);
 
         return view('products.index', compact('products', 'selectedType', 'totalInCategory', 'facets', 'commonFacets'));
     }
 
+    public function show(products $product)
+    {
+        $product->load('variants');
+        if (isset($this->typeConfigs[$product->product_type])) {
+            $product->load($this->typeConfigs[$product->product_type]['with']);
+        }
+        $product->loadAvg('reviews', 'star')->loadCount('reviews');
+
+        $starCounts = $product->reviews()
+            ->select('star', DB::raw('COUNT(*) as n'))
+            ->groupBy('star')
+            ->pluck('n', 'star');
+        $stars = collect([5, 4, 3, 2, 1])->mapWithKeys(fn ($s) => [$s => (int) ($starCounts[$s] ?? 0)]);
+
+        // รีวิวล่าสุดก่อน (reviews.date, reviews.no)
+        $reviews = $product->reviews()->with('customer')->orderByDesc('date')->orderByDesc('no')->get();
+
+        $isFavorite = false;
+        if (auth()->check()) {
+            $isFavorite = DB::table('favorites')
+                ->where('customer_id', auth()->id())
+                ->where('product_id', $product->product_id)
+                ->exists();
+        }
+
+        return view('products.show', compact('product', 'stars', 'reviews', 'isFavorite'));
+    }
+
+    // =====================================================================
+    // ตัวช่วยกรอง
+    // =====================================================================
+
+    /**
+     * สีใน productvariants อาจเป็นสีเดียว ("Black") หรือหลายสีคั่นด้วย "/" ("Black/Orange")
+     * กรอง "Black" จะได้ทั้ง Black, Black/Orange, Red/Black (เทียบทีละสี ไม่ใช่เทียบข้อความบางส่วน
+     * จึงไม่ทำให้ "Blue" ไปตรงกับ "Light Blue")
+     */
+    private function whereColorIn($query, array $colors)
+    {
+        return $query->where(function ($w) use ($colors) {
+            foreach ($colors as $color) {
+                $w->orWhereRaw(
+                    "CONCAT('/', `color`, '/') LIKE ?",
+                    ['%/' . $this->escapeLike($color) . '/%']
+                );
+            }
+        });
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return addcslashes($value, '%_\\');
+    }
+
+    // =====================================================================
+    // จำนวนข้างแต่ละตัวเลือก (นับทั้งหมวด ไม่สนตัวกรองอื่น)
+    // =====================================================================
+
     private function buildFacets(string $type): array
     {
         $config = $this->typeConfigs[$type];
+        $table  = (new products)->{$config['relation']}()->getRelated()->getTable();
+        $multi  = $config['multi'] ?? [];
         $facets = [];
 
         foreach ($config['fields'] as $column => $param) {
-            $facets[$param] = \DB::table($config['table'])
+            if (in_array($column, $multi, true)) {
+                $facets[$param] = $this->countTokens(
+                    DB::table($table)->whereNotNull($column)->pluck($column),
+                    ';'
+                );
+                continue;
+            }
+
+            $facets[$param] = DB::table($table)
                 ->whereNotNull($column)
-                ->select($column, \DB::raw('COUNT(*) as n'))
+                ->select($column, DB::raw('COUNT(*) as n'))
                 ->groupBy($column)
                 ->orderBy($column)
-                ->pluck('n', $column);   // ['Head-heavy' => 12, 'Even-balance' => 8, ...]
+                ->pluck('n', $column);
         }
 
         return $facets;
@@ -157,26 +255,64 @@ class ProductController extends Controller
 
     private function buildCommonFacets(?string $type): array
     {
-        $brandQuery = products::query();
-        $colorQuery = \DB::table('product_variant')
-            ->join('product', 'product.product_id', '=', 'product_variant.product_id');
+        $productTable = (new products)->getTable();
+        $variantTable = (new products)->variants()->getRelated()->getTable();
 
-        // ถ้ามีหมวดที่เลือก ให้นับเฉพาะหมวดนั้น
-        if ($type && isset($this->typeConfigs[$type])) {
-            $brandQuery->where('product_type', $type);
-            $colorQuery->where('product.product_type', $type);
+        $brands = products::query()
+            ->when($type, fn ($q) => $q->where('product_type', $type))
+            ->select('brand', DB::raw('COUNT(*) as n'))
+            ->groupBy('brand')
+            ->orderBy('brand')
+            ->pluck('n', 'brand');
+
+        // นับสีทีละสี (แยก "Black/Orange" เป็น Black และ Orange) โดยนับเป็นจำนวนสินค้า ไม่ใช่จำนวนแถว
+        $rows = DB::table($variantTable)
+            ->join($productTable, "{$productTable}.product_id", '=', "{$variantTable}.product_id")
+            ->when($type, fn ($q) => $q->where("{$productTable}.product_type", $type))
+            ->select("{$variantTable}.product_id", "{$variantTable}.color")
+            ->get();
+
+        $seen = [];
+        foreach ($rows as $row) {
+            foreach (explode('/', (string) $row->color) as $token) {
+                $token = trim($token);
+                if ($token === '') {
+                    continue;
+                }
+                $key = mb_strtolower($token);
+                $seen[$key]['label'] ??= $token;
+                $seen[$key]['products'][$row->product_id] = true;
+            }
         }
 
-        return [
-            'brands' => $brandQuery
-                ->select('brand', \DB::raw('COUNT(*) as n'))
-                ->groupBy('brand')->orderBy('brand')
-                ->pluck('n', 'brand'),
+        $colors = collect($seen)
+            ->mapWithKeys(fn ($c) => [$c['label'] => count($c['products'])])
+            ->sortKeys();
 
-            'colors' => $colorQuery
-                ->select('color', \DB::raw('COUNT(DISTINCT product_variant.product_id) as n'))
-                ->groupBy('color')->orderBy('color')
-                ->pluck('n', 'color'),
-        ];
+        return ['brands' => $brands, 'colors' => $colors];
+    }
+
+    /**
+     * แยกข้อความที่คั่นด้วย ";" เป็นลักษณะย่อยแล้วนับ โดยไม่สนตัวพิมพ์เล็ก/ใหญ่
+     * ("Repulsion power" กับ "repulsion power" นับเป็นอันเดียวกัน)
+     */
+    private function countTokens($rows, string $separator)
+    {
+        $seen = [];
+
+        foreach ($rows as $row) {
+            $tokens = collect(explode($separator, (string) $row))
+                ->map(fn ($t) => trim($t))
+                ->filter()
+                ->unique(fn ($t) => mb_strtolower($t));
+
+            foreach ($tokens as $token) {
+                $key = mb_strtolower($token);
+                $seen[$key]['label'] ??= mb_strtoupper(mb_substr($token, 0, 1)) . mb_substr($token, 1);
+                $seen[$key]['n'] = ($seen[$key]['n'] ?? 0) + 1;
+            }
+        }
+
+        return collect($seen)->mapWithKeys(fn ($c) => [$c['label'] => $c['n']])->sortKeys();
     }
 }
