@@ -129,6 +129,9 @@ class ProductController extends Controller
             }
         }]);
 
+        // ดาวเฉลี่ยของแต่ละสินค้า → $product->reviews_avg_star
+        $query->withAvg('reviews', 'star');
+
         // ----------------------------------------------------
         // C. เรียงลำดับ
         // ----------------------------------------------------
@@ -165,7 +168,12 @@ class ProductController extends Controller
         $facets       = $selectedType ? $this->buildFacets($selectedType) : [];
         $commonFacets = $this->buildCommonFacets($selectedType);
 
-        return view('products.index', compact('products', 'selectedType', 'totalInCategory', 'facets', 'commonFacets'));
+        // สินค้าที่ผู้ใช้ที่ล็อกอินกดหัวใจไว้ (ผู้เยี่ยมชม = ว่าง)
+        $favoriteIds = auth()->check()
+            ? DB::table('favorites')->where('customer_id', auth()->id())->pluck('product_id')->all()
+            : [];
+
+        return view('products.index', compact('products', 'selectedType', 'totalInCategory', 'facets', 'commonFacets', 'favoriteIds'));
     }
 
     public function show(products $product)
