@@ -6,42 +6,27 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Contracts\PasskeyUser;
-use Laravel\Fortify\PasskeyAuthenticatable;
-use Laravel\Fortify\TwoFactorAuthenticatable;
 
 /**
  * @property int $id
  * @property string $name
  * @property string $email
- * @property string|null $phone
- * @property Carbon|null $email_verified_at
  * @property string $password
- * @property string|null $two_factor_secret
- * @property string|null $two_factor_recovery_codes
- * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'phone', 'password'])]
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+#[Fillable(['name', 'email', 'password'])]
+#[Hidden(['password', 'remember_token'])]
+class User extends Authenticatable
 {
-    /*
-     * จุดนี้คือบัญชีที่ใช้เข้าสู่ระบบ Laravel ปัจจุบัน โดยอ้างอิง `users.id`
-     * และผูกกับรหัสผ่าน, Passkey และ Two-factor authentication
-     * ใน EER ของกลุ่มใช้ `customer.customer_id` ให้ทีม Backend กำหนดความสัมพันธ์
-     * ระหว่างสองคีย์นี้ก่อนสร้างตารางหรือเปลี่ยน primary key
-     * ห้ามสร้างบัญชีลูกค้าสำหรับคนเดิมซ้ำอีกชุด เพราะจะทำให้ระบบ login แยกกัน
-     */
-
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -51,7 +36,6 @@ class User extends Authenticatable implements PasskeyUser
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -66,5 +50,40 @@ class User extends Authenticatable implements PasskeyUser
         return Str::length($initials) > 1
             ? Str::substr($initials, 0, 1).Str::substr($initials, -1)
             : $initials;
+    }
+
+    public function Delivery_address(): HasMany
+    {
+        return $this->hasMany(delivery_address::class, 'user_id');
+    }
+
+    public function cards(): HasMany
+    {
+        return $this->hasMany(credit_debit_card::class, 'user_id');
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(orders::class, 'customer_id');
+    }
+
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(cart_item::class, 'customer_id');
+    }
+
+    public function favorites(): BelongsToMany
+    {
+        return $this->belongsToMany(products::class, 'favorites', 'customer_id', 'product_id', 'id', 'product_id');
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(reviews::class, 'customer_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(payment::class, 'user_id');
     }
 }
