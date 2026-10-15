@@ -16,7 +16,10 @@ class ProfileUpdateTest extends TestCase
     {
         $this->actingAs($user = User::factory()->create());
 
-        $this->get(route('profile.edit'))->assertOk();
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('Member information')
+            ->assertSee('Phone number');
     }
 
     public function test_removed_authentication_data_is_not_stored(): void
@@ -41,6 +44,7 @@ class ProfileUpdateTest extends TestCase
         $response = Livewire::test('pages::settings.profile')
             ->set('name', 'Test User')
             ->set('email', 'test@example.com')
+            ->set('phone', '+1 555 010 1234')
             ->call('updateProfileInformation');
 
         $response->assertHasNoErrors();
@@ -49,6 +53,24 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertEquals('Test User', $user->name);
         $this->assertEquals('test@example.com', $user->email);
+        $this->assertEquals('+1 555 010 1234', $user->phone);
+        $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_email_verification_status_is_unchanged_when_email_address_is_unchanged(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user);
+
+        $response = Livewire::test('pages::settings.profile')
+            ->set('name', 'Test User')
+            ->set('email', $user->email)
+            ->call('updateProfileInformation');
+
+        $response->assertHasNoErrors();
+
+        $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
     public function test_user_can_delete_their_account(): void
@@ -63,7 +85,7 @@ class ProfileUpdateTest extends TestCase
 
         $response
             ->assertHasNoErrors()
-            ->assertRedirect('/');
+            ->assertRedirect(route('home', absolute: false));
 
         $this->assertNull($user->fresh());
         $this->assertFalse(auth()->check());

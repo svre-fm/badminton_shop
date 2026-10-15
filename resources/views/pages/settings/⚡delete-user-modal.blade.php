@@ -5,7 +5,8 @@ use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
-new class extends Component {
+new class extends Component
+{
     use PasswordValidationRules;
 
     public string $password = '';
@@ -21,7 +22,7 @@ new class extends Component {
 
         tap(Auth::user(), $logout(...))->delete();
 
-        $this->redirect('/', navigate: true);
+        $this->redirect(route('home'), navigate: true);
     }
 }; ?>
 

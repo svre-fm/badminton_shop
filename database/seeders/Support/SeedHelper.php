@@ -94,6 +94,15 @@ final class SeedHelper
         return mt_rand(1, 100) <= $percent;
     }
 
+    public static function racketTension(int $maxTension): int
+    {
+        if ($maxTension < 18) {
+            throw new \InvalidArgumentException('Racket maximum tension must be at least 18 lbs.');
+        }
+
+        return mt_rand(18, $maxTension);
+    }
+
     /** สุ่มตามน้ำหนัก เช่น [5 => 45, 4 => 30] คืนค่า key */
     public static function weighted(array $weights)
     {

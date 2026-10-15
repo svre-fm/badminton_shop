@@ -32,8 +32,4 @@ class badminton_rackets extends Model
         return $this->belongsTo(products::class, 'product_id', 'product_id');
     }
 
-    public function tensions(): HasMany
-    {
-        return $this->hasMany(racket_tensions::class, 'product_id', 'product_id');
-    }
 }

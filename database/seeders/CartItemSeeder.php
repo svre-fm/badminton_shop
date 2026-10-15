@@ -14,7 +14,18 @@ class CartItemSeeder extends Seeder
         SeedHelper::seed(1005);
 
         // เฉพาะ variant ที่มีของ เพื่อให้ตะกร้าดูสมเหตุสมผล
-        $variants = DB::table('productvariants')->where('stock', '>', 0)->get()->all();
+        $variants = DB::table('productvariants')
+            ->join('products', 'products.product_id', '=', 'productvariants.product_id')
+            ->leftJoin('badminton_rackets', 'badminton_rackets.product_id', '=', 'products.product_id')
+            ->where('productvariants.stock', '>', 0)
+            ->get([
+                'productvariants.product_id',
+                'productvariants.color',
+                'productvariants.stock',
+                'products.product_type',
+                'badminton_rackets.max_tension',
+            ])
+            ->all();
         $rows = [];
 
         foreach (DB::table('users')->orderBy('id')->pluck('id') as $index => $userId) {
@@ -33,6 +44,9 @@ class CartItemSeeder extends Seeder
                     'product_id' => $variant->product_id,
                     'color' => $variant->color,
                     'quantity' => mt_rand(1, min(3, $variant->stock)),
+                    'racket_tension' => $variant->product_type === 'RACKET'
+                        ? SeedHelper::racketTension((int) $variant->max_tension)
+                        : 0,
                     'created_at' => $at,
                     'updated_at' => $at,
                 ];

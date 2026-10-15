@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('color', 50);
             $table->integer('quantity');
             $table->decimal('unit_price', 10, 2);
-
+            $table->integer('tension')->default(0);
             $table->foreign('order_no')->references('order_no')->on('orders')->cascadeOnDelete();
             $table->foreign(['product_id', 'color'])
                 ->references(['product_id', 'color'])->on('productvariants');
