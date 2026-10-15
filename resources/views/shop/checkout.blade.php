@@ -175,17 +175,24 @@
                                     <a :href="'{{ url('/edit-address') }}/' + delivery_address.id" class="cursor-pointer text-sm font-medium text-brand underline underline-offset-2 hover:text-ink">
                                         Edit
                                     </a>
-                                    <button
-                                        type="button"
-                                        @click="removeAddress(delivery_address.id)"
-                                        :aria-label="'Delete address for ' + delivery_address.name"
-                                        title="Delete this address"
-                                        class="group grid size-8 cursor-pointer place-items-center rounded-lg text-red-400 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+                                    <form
+                                        method="POST"
+                                        :action="'{{ url('/delivery-address') }}/' + delivery_address.id"
+                                        onsubmit="return confirm('Delete this address?')"
                                     >
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            :aria-label="'Delete address for ' + delivery_address.name"
+                                            title="Delete this address"
+                                            class="group grid size-8 cursor-pointer place-items-center rounded-lg text-red-400 transition hover:bg-red-50 hover:text-red-700"
+                                        >
                                         <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                             <path d="M4 7h16M10 11v6m4-6v6M5 7l1 14h12l1-14M9 7V4h6v3"/>
-                                        </svg>
-                                    </button>
+                                        </svg>                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </li>
