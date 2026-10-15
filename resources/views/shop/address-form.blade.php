@@ -1,6 +1,6 @@
 @php
     $editing = request()->routeIs('address.edit');
-    $delivery_address = $delivery_address ?? null;
+    $delivery_address = $Delivery_address ?? null;
 @endphp
 
 <x-layouts.shop :title="$editing ? 'Edit address' : 'Add address'">
@@ -28,7 +28,18 @@
             @endif
         </div>
 
-        <form x-data="{ attempted: false }" @submit.prevent="attempted = true" class="mt-6 space-y-5 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-8">
+        <form 
+            method="POST"
+            action="{{ $editing
+            ? route('address.update', request()->route('id'))
+            : route('address.store') }}"
+            class="mt-6 space-y-5 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-8"
+        >
+            @csrf
+            @if ($editing)
+                @method('PATCH')
+            @endif
+
             <div>
                 <label for="address-name" class="mb-2 block text-sm font-medium text-ink">Name</label>
                 <input
