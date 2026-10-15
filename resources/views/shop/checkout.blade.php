@@ -115,11 +115,24 @@
                     </div>
 
                     <div x-show="pay === 'card'" x-cloak class="mt-5 space-y-3 rounded-xl bg-page p-4">
-                        <template x-for="credit_debit_card in credit_debit_cards" :key="credit_debit_card.customer_id + ':' + credit_debit_card.number">
-                            <label class="flex cursor-pointer items-center gap-3 text-base sm:text-lg">
-                                <input type="radio" name="card_id" :value="credit_debit_card.number" class="size-5 cursor-pointer text-ink">
-                                <span x-text="'Card ending in ' + String(credit_debit_card.number).slice(-4) + ' · Expires ' + credit_debit_card.expiry_date"></span>
-                            </label>
+                        <template x-for="credit_debit_card in credit_debit_cards" :key="credit_debit_card.delete_token">
+                            <div class="flex items-center justify-between gap-3">
+                                <label class="flex min-w-0 cursor-pointer items-center gap-3 text-base sm:text-lg">
+                                    <input type="radio" name="card_id" :value="credit_debit_card.delete_token" class="size-5 shrink-0 cursor-pointer text-ink">
+                                    <span x-text="'Card **** **** **** ' + credit_debit_card.last4 + ' · Expires ' + credit_debit_card.expiry_date"></span>
+                                </label>
+                                <form
+                                    method="POST"
+                                    :action="'{{ url('/credit-cards') }}/' + credit_debit_card.delete_token"
+                                    onsubmit="return confirm('Remove this saved card?')"
+                                >
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">
+                                        Remove
+                                    </button>
+                                </form>
+                            </div>
                         </template>
                         <p x-show="!credit_debit_cards.length" class="text-sm text-muted">No saved payment methods.</p>
                         <a href="{{ route('payment-method.create') }}" class="inline-flex items-center gap-2 rounded-lg border border-ink bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-mist">+ Pay with new card</a>
