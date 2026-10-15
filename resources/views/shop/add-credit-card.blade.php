@@ -10,23 +10,38 @@
             <p class="mt-2 text-sm leading-6 text-muted">Add a card for a faster checkout experience.</p>
         </header>
 
-        {{-- ฟอร์มนี้เป็น preview ห้ามเก็บเลขบัตรเต็มหรือ CVV ในฐานข้อมูลร้าน
-             ให้ PaymentMethodController ต่อ payment provider แบบ tokenization และเก็บเฉพาะ token/reference ที่ปลอดภัย --}}
+        {{-- ใช้ข้อมูลสมมติสำหรับทดสอบเท่านั้น ห้ามกรอกหรือจัดเก็บเลขบัตรจริง/CVV ในฐานข้อมูลร้าน --}}
         <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-            This is a design preview and is not connected to a payment provider. Do not enter real card details.
-            Card data must be handled by a secure payment provider, not stored directly by the shop.
+            Demo database save only: use fictional test data. Never enter real card details. Production payments must use a compliant provider and store only its token/reference.
         </div>
 
-        <form x-data="{ attempted: false }" @submit.prevent="attempted = true" class="mt-6 space-y-5 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-8">
+        <form method="POST" action="{{ route('payment-method.store') }}" class="mt-6 space-y-5 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-8">
+            @csrf
+
+            @if ($errors->any())
+                <div role="alert" class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                    <p class="font-semibold">Please correct the following:</p>
+                    <ul class="mt-2 list-inside list-disc">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div>
                 <label for="card-number" class="mb-2 block text-sm font-medium text-ink">Card Number</label>
                 <input
                     id="card-number"
+                    name="card_no"
                     type="text"
                     inputmode="numeric"
                     autocomplete="cc-number"
                     required
-                    maxlength="23"
+                    minlength="14"
+                    maxlength="19"
+                    pattern="[0-9]{14,19}"
+                    title="Enter 14 to 19 digits with no spaces or other characters."
                     class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                     placeholder="0000 0000 0000 0000"
                 >
@@ -36,18 +51,14 @@
                 <label for="card-expiry" class="mb-2 block text-sm font-medium text-ink">Expiry Date</label>
                 <input
                     id="card-expiry"
-                    type="text"
+                    name="expiry_date"
+                    type="month"
                     autocomplete="cc-exp"
                     required
-                    maxlength="7"
+                    value="{{ old('expiry_date') }}"
                     class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
-                    placeholder="MM/YYYY"
                 >
             </div>
-
-            <p x-cloak x-show="attempted" role="status" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                Preview only: no card details were sent or saved. Connect a compliant payment provider before accepting real cards.
-            </p>
 
             <div class="flex flex-col-reverse gap-3 border-t border-mist pt-5 sm:flex-row sm:justify-end">
                 <a href="{{ route('checkout') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-mist px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-page">
