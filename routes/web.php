@@ -1,6 +1,8 @@
 <?php
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CreditCardController;
+use App\Http\Controllers\CheckoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/home')->name('root');
@@ -42,11 +44,12 @@ Route::middleware('auth')->group(function () {
     // post	Create data (Route::post('/users', ...))
     // put	Update data (Route::put('/users/{id}', ...))
     // patch	Partially update data
-    // delete	Delete data    
-    //addressController
-    Route::get('/checkout', [AddressController::class, 'checkout'])
+    // delete	Delete data
+
+    Route::get('/checkout', [CheckoutController::class, 'show'])
         ->name('checkout');
     
+    //addressController
     Route::view('/add-address', 'shop.address-form')
         ->name('address.create');
     Route::post('/add-address', [AddressController::class, 'store'])
@@ -61,13 +64,18 @@ Route::middleware('auth')->group(function () {
         ->whereNumber('id')
         ->name('address.destroy');
 
-    Route::view('/add-credit-card', 'shop.add-credit-card')->name('payment-method.create');
+    //CreditCardController
+    Route::get('/add-credit-card', [CreditCardController::class, 'create'])
+        ->name('payment-method.create');
+    Route::post('/add-credit-card', [CreditCardController::class, 'store'])
+        ->name('payment-method.store');
+    Route::delete('/credit-cards/{cardToken}', [CreditCardController::class, 'destroy'])
+        ->where('cardToken', '[a-f0-9]{64}')
+        ->name('payment-method.destroy');
 
     Route::view('/review', 'shop.review')->name('review.create');
-
     Route::redirect('/favorites', '/favorite')->name('favorites.legacy');
     Route::view('/favorite', 'shop.favorites')->name('favorites');
-
     Route::redirect('/orders', '/status-delivery')->name('orders.legacy');
     Route::view('/status-delivery', 'shop.orders')->name('orders');
 });
