@@ -108,7 +108,7 @@
                                    'bg-page text-brand' => request()->routeIs('profile.edit'),
                                    'text-muted hover:bg-mist hover:text-ink' => ! request()->routeIs('profile.edit'),
                                ])>
-                                Member information
+                                My profile
                             </a>
                         </li>
                         <li><a href="{{ route('favorites') }}" class="block px-3 py-2 hover:bg-mist hover:text-ink">Favorites</a></li>

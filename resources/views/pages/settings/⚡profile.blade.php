@@ -84,7 +84,7 @@ new #[Layout('components.layouts.shop')] #[Title('My profile')] class extends Co
 <section class="mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-8 sm:pt-12">
     <header class="mb-8">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand">Account</p>
-        <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">Member information</h1>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">My profile</h1>
         <p class="mt-2 max-w-xl text-sm leading-6 text-muted sm:text-base">
             View and update your name, email address, and phone number.
         </p>
