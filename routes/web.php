@@ -1,5 +1,5 @@
 <?php
-
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,13 +32,34 @@ Route::get('/product/{category}/{product_id}', [ProductController::class, 'show'
 Route::redirect('/dashboard', '/home');
 
 Route::middleware('auth')->group(function () {
-    Route::redirect('/cart', '/cart_item')->name('cart.legacy');
-    Route::view('/cart_item', 'shop.cart')->name('cart');
+    Route::redirect('/cart', '/cart_item')
+        ->name('cart.legacy');
+    Route::view('/cart_item', 'shop.cart')
+        ->name('cart');
 
-    Route::view('/checkout', 'shop.checkout')->name('checkout');
-
-    Route::view('/add-address', 'shop.address-form')->name('address.create');
-    Route::view('/edit-address/{id}', 'shop.address-form')->name('address.edit');
+    // Route Methods
+    // get	Read data (e.g., Route::get('/users', ...))
+    // post	Create data (Route::post('/users', ...))
+    // put	Update data (Route::put('/users/{id}', ...))
+    // patch	Partially update data
+    // delete	Delete data    
+    //addressController
+    Route::get('/checkout', [AddressController::class, 'checkout'])
+        ->name('checkout');
+    
+    Route::view('/add-address', 'shop.address-form')
+        ->name('address.create');
+    Route::post('/add-address', [AddressController::class, 'store'])
+        ->name('address.store');
+    Route::get('/edit-address/{id}', [AddressController::class, 'edit'])
+        ->whereNumber('id')
+        ->name('address.edit');
+    Route::patch('/edit-address/{id}', [AddressController::class, 'update'])
+        ->whereNumber('id')
+        ->name('address.update');
+    Route::delete('/delivery-address/{id}', [AddressController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('address.destroy');
 
     Route::view('/add-credit-card', 'shop.add-credit-card')->name('payment-method.create');
 
