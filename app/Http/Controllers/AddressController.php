@@ -93,19 +93,4 @@ class AddressController extends Controller
             ->with('status', 'Address deleted successfully!');
     }
 
-    public function checkout()
-    {
-        $delivery_addresses = Auth::user()
-            ->Delivery_address()
-            ->get(['delivery_id', 'name', 'phone', 'address'])
-            ->map(fn ($address) => [
-                'id' => $address->delivery_id,
-                'name' => $address->name,
-                'phone' => $address->phone,
-                'address' => $address->address,
-            ])
-            ->values();
-
-        return view('shop.checkout', compact('delivery_addresses'));
-    }
 }
