@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 // request หนึ่งรายการ เช่น GET /checkout จะเรียก route action ได้หนึ่งเมธอดเท่านั้น
@@ -11,6 +12,22 @@ class CheckoutController extends Controller
     public function show(): View
     {
         $user = Auth::user();
+        $selectedItems = session('checkout.cart_items', []);
+
+        $cartItems = collect();
+        if ($selectedItems) {
+            $cartItems = $user->cartItems()
+                ->with('product')
+                ->where(function ($query) use ($selectedItems) {
+                    foreach ($selectedItems as $item) {
+                        $query->orWhere(function ($query) use ($item) {
+                            $query->where('product_id', $item['product_id'])
+                                ->where('color', $item['color']);
+                        });
+                    }
+                })
+                ->get();
+        }
 
         $delivery_addresses = $user
             ->Delivery_address()
@@ -37,6 +54,43 @@ class CheckoutController extends Controller
             ])
             ->values();
 
-        return view('shop.checkout', compact('delivery_addresses', 'credit_debit_cards'));
+        return view('shop.checkout', compact('delivery_addresses', 'credit_debit_cards', 'cartItems'));
+    }
+
+    public function selectItems(Request $request)
+    {
+        $validated = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.color' => ['required', 'string', 'max:50'],
+        ]);
+
+        $items = collect($validated['items'])
+            ->unique(fn ($item) => $item['product_id'].'|'.$item['color'])
+            ->values()
+            ->all();
+
+        if (count($items) !== count($validated['items'])) {
+            return back()->withErrors(['items' => 'Duplicate cart items were submitted.']);
+        }
+
+        $matchingItems = Auth::user()->cartItems()
+            ->where(function ($query) use ($items) {
+                foreach ($items as $item) {
+                    $query->orWhere(function ($query) use ($item) {
+                        $query->where('product_id', $item['product_id'])
+                            ->where('color', $item['color']);
+                    });
+                }
+            })
+            ->get(['product_id', 'color']);
+
+        if ($matchingItems->count() !== count($items)) {
+            return back()->withErrors(['items' => 'One or more selected items are no longer in your cart.']);
+        }
+
+        session(['checkout.cart_items' => $items]);
+
+        return redirect()->route('checkout');
     }
 }

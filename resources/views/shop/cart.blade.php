@@ -54,11 +54,6 @@
                     this.updating[itemKey] = false;
                 }
             },
-            purchase() {
-                if (!this.picked.length) return;
-                // CheckoutController ต้องอ่าน cart_item ที่เลือกจาก server และคำนวณจาก product.price ใหม่
-                window.location.href = @js(route('checkout'));
-            }
         }"
     >
         <h1 class="mt-4 text-3xl font-bold text-ink">My cart</h1>
@@ -115,9 +110,18 @@
         <div x-show="cart_items.length" x-cloak class="mt-8 flex flex-wrap items-center justify-end gap-5">
             <span class="text-xl text-muted">(Total <span x-text="totalQuantity"></span> items)</span>
             <span class="text-3xl font-bold text-brand" x-text="'฿' + total.toFixed(2)"></span>
-            <button type="button" @click="purchase()" :disabled="!picked.length" class="rounded-lg bg-ink px-8 py-3 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
-                Purchase
-            </button>
+            <form method="POST" action="{{ route('checkout.select') }}">
+                @csrf
+                <template x-for="(cart_item, index) in picked" :key="key(cart_item)">
+                    <span>
+                        <input type="hidden" :name="'items[' + index + '][product_id]'" :value="cart_item.product_id">
+                        <input type="hidden" :name="'items[' + index + '][color]'" :value="cart_item.color">
+                    </span>
+                </template>
+                <button type="submit" :disabled="!picked.length" class="rounded-lg bg-ink px-8 py-3 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
+                    Purchase
+                </button>
+            </form>
         </div>
     </div>
 </x-layouts.shop>

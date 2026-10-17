@@ -2,7 +2,7 @@
     // ใช้ delivery_address.id/name/phone/address, cart_item + product และ credit_debit_card ตาม EER
     // orders.shipping ต้องคำนวณจาก Backend; diagram ไม่มี default address และ orders ไม่มี FK ไป delivery_address
     $delivery_addresses = collect($delivery_addresses ?? [])->values()->all();
-    $cart_items = collect($cart_items ?? [])->values()->all();
+    $cart_items = collect($cartItems ?? [])->values()->all();
     $credit_debit_cards = collect($credit_debit_cards ?? [])->values()->all();
     $shipping = isset($shipping) ? (float) $shipping : null;
 @endphp

@@ -56,6 +56,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/checkout', [CheckoutController::class, 'show'])
         ->name('checkout');
+    Route::post('/checkout', [CheckoutController::class, 'selectItems'])
+        ->name('checkout.select');
     
     //addressController
     Route::view('/add-address', 'shop.address-form')
