@@ -227,14 +227,24 @@ class ProductController extends Controller
         $reviews = $product->reviews()->with('customer')->orderByDesc('date')->orderByDesc('no')->get();
 
         $isFavorite = false;
+        $reviewableOrders = collect();
         if (auth()->check()) {
             $isFavorite = DB::table('favorites')
                 ->where('customer_id', auth()->id())
                 ->where('product_id', $product->product_id)
                 ->exists();
+
+            $reviewableOrders = auth()->user()->orders()
+                ->where('status', 'Complete')
+                ->whereHas('items', fn ($query) => $query->where('product_id', $product->product_id))
+                ->whereDoesntHave('reviews', fn ($query) => $query
+                    ->where('product_id', $product->product_id)
+                    ->where('customer_id', auth()->id()))
+                ->orderByDesc('order_date')
+                ->get(['order_no', 'order_date']);
         }
 
-        return view('products.show', compact('product', 'stars', 'reviews', 'isFavorite'));
+        return view('products.show', compact('product', 'stars', 'reviews', 'isFavorite', 'reviewableOrders'));
     }
 
     // =====================================================================
