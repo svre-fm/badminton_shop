@@ -4,7 +4,6 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Fortify\Features;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -15,7 +14,10 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get(route('login'));
 
-        $response->assertOk();
+        $response
+            ->assertOk()
+            ->assertSee('Remember me')
+            ->assertDontSee('Sign in with a passkey');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -29,7 +31,21 @@ class AuthenticationTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('dashboard', absolute: false));
+            ->assertRedirect(route('home', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
+    public function test_users_return_to_a_protected_page_after_authenticating(): void
+    {
+        $user = User::factory()->create();
+
+        $this->get(route('cart'))->assertRedirect(route('login'));
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertRedirect(route('cart', absolute: false));
 
         $this->assertAuthenticated();
     }
@@ -45,26 +61,6 @@ class AuthenticationTest extends TestCase
 
         $response->assertSessionHasErrorsIn('email');
 
-        $this->assertGuest();
-    }
-
-    public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge(): void
-    {
-        $this->skipUnlessFortifyHas(Features::twoFactorAuthentication());
-
-        Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-        ]);
-
-        $user = User::factory()->withTwoFactor()->create();
-
-        $response = $this->post(route('login.store'), [
-            'email' => $user->email,
-            'password' => 'password',
-        ]);
-
-        $response->assertRedirect(route('two-factor.login'));
         $this->assertGuest();
     }
 

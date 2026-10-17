@@ -2,26 +2,28 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
 {
-    use RefreshDatabase;
-
-    public function test_guests_are_redirected_to_the_login_page(): void
+    public function test_legacy_dashboard_url_redirects_to_store_home(): void
     {
-        $response = $this->get(route('dashboard'));
-        $response->assertRedirect(route('login'));
+        $this->get('/dashboard')
+            ->assertRedirect(route('home'));
     }
 
-    public function test_authenticated_users_can_visit_the_dashboard(): void
+    public function test_root_url_redirects_to_canonical_store_home(): void
     {
-        $user = User::factory()->create();
-        $this->actingAs($user);
+        $this->get('/')
+            ->assertRedirect(route('home'));
+    }
 
-        $response = $this->get(route('dashboard'));
-        $response->assertOk();
+    public function test_legacy_shop_and_product_urls_redirect_to_canonical_paths(): void
+    {
+        $this->get('/shop?category=grip')
+            ->assertRedirect('/category/grip');
+
+        $this->get('/product/sample')
+            ->assertRedirect('/product/badminton-racket/sample');
     }
 }
