@@ -12,9 +12,10 @@ class CartController extends Controller
     /**
      * READ: แสดงหน้ารายการสินค้าในตะกร้า
      */
+
     public function index()
     {
-        // Eager load the product relationship; variantRecord() is a query helper, not a relationship.
+        // Load the product relationship for displaying cart items.
         $cartItems = Auth::user()->cartItems()
             ->with('product')
             ->get();
@@ -32,7 +33,7 @@ class CartController extends Controller
             'product_id' => 'required|integer',
             'color' => 'required|string|max:50',
             'quantity' => 'required|integer|min:1',
-            'tension' => 'required|integer', 
+            'tension' => 'nullable|integer',
         ]);
 
         $customerId = Auth::id();
@@ -43,53 +44,84 @@ class CartController extends Controller
             ->firstOrFail();
 
         // 2. ค้นหาสินค้าในตะกร้าโดยใช้ Composite Key ทั้ง 4 คอลัมน์
-        $cartItem = cart_item::firstOrNew([
-            'customer_id' => $customerId,
-            'product_id' => $validated['product_id'],
-            'color' => $validated['color'],
-            'racket_tension' => $validated['tension'],
-        ]);
+        $existingCartItem = cart_item::where([
+            ['customer_id', '=', $customerId],
+            ['product_id', '=', $validated['product_id']],
+            ['color', '=', $validated['color']],
+        ])->first();
 
-        // คำนวณจำนวนสินค้าใหม่ (ถ้ามีในตะกร้าอยู่แล้วให้บวกเพิ่ม)
-        $newQuantity = $cartItem->exists ? $cartItem->quantity + $validated['quantity'] : $validated['quantity'];
+        if ($existingCartItem) {
+            // กรณีมีอยู่แล้ว: บวกจำนวนเพิ่ม
+            $newQuantity = $existingCartItem->quantity + $validated['quantity'];
 
-        // ตรวจสอบว่าจำนวนที่ต้องการสั่งซื้อเกินสต็อกที่มีหรือไม่
-        if ($newQuantity > $variant->stock) {
-            return back()->with('error', 'Exceeds the available stock (left: ' . $variant->stock );
+            if ($newQuantity > $variant->stock) {
+                return back()->with('error', 'จำนวนสินค้าเกินกว่าสต็อกที่มีอยู่ (เหลือ ' . $variant->stock . ' ชิ้น)');
+            }
+
+            // สั่ง Update โดยใช้ Query Builder ตรงๆ เพื่อหลีกเลี่ยงบั๊ก Composite Key ของ Laravel
+            cart_item::where([
+                ['customer_id', '=', $customerId],
+                ['product_id', '=', $validated['product_id']],
+                ['color', '=', $validated['color']],
+            ])->update([
+                'quantity' => $newQuantity,
+                // 'racket_tension' => $validated['tension'] // ถ้าตารางลบออกไปแล้ว ไม่ต้องใส่บรรทัดนี้
+            ]);
+
+        } else {
+            // กรณียังไม่มี: ตรวจสอบสต็อกแล้ว Insert ใหม่
+            if ($validated['quantity'] > $variant->stock) {
+                return back()->with('error', 'exceeds the available stock (left: ' . $variant->stock . ' )');
+            }
+
+            cart_item::create([
+                'customer_id' => $customerId,
+                'product_id' => $validated['product_id'],
+                'color' => $validated['color'],
+                'quantity' => $validated['quantity'],
+                // 'racket_tension' => $validated['tension'] // ถ้าตารางลบออกไปแล้ว ไม่ต้องใส่บรรทัดนี้
+            ]);
         }
 
-        // บันทึกข้อมูล
-        $cartItem->quantity = $newQuantity;
-        $cartItem->save();
-
-        return back()->with('status', 'Item added to cart successfully!');
+        return back()->with('status', 'added to cart successfully!');
     }
 
     /**
      * UPDATE: อัปเดตจำนวนสินค้าในหน้าตะกร้าโดยตรง
      */
-    public function update(Request $request, $productId, $color, $tension)
+    public function update(Request $request, int $productId, string $color)
     {
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $cartItem = cart_item::where([
+        $cartItem = cart_item::query()->where([
             ['customer_id', '=', Auth::id()],
             ['product_id', '=', $productId],
             ['color', '=', $color],
-            ['racket_tension', '=', $tension],
         ])->firstOrFail();
 
-        // ตรวจสอบสต็อกอีกครั้งก่อนอัปเดต
-        $variant = $cartItem->variantRecord();
+        $variant = productvariant::query()
+            ->where('product_id', $productId)
+            ->where('color', $color)
+            ->firstOrFail();
+
         if ($validated['quantity'] > $variant->stock) {
-            return back()->with('error', 'Exceeds the available stock!');
+            return response()->json([
+                'message' => 'Exceeds the available stock (left: '.$variant->stock.').',
+            ], 422);
         }
 
-        $cartItem->update(['quantity' => $validated['quantity']]);
+        cart_item::query()->where([
+            ['customer_id', '=', Auth::id()],
+            ['product_id', '=', $productId],
+            ['color', '=', $color],
+        ])->update(['quantity' => $validated['quantity']]);
 
-        return back()->with('status', 'Shopping cart updated successfully');
+        return response()->json([
+            'message' => 'Shopping cart updated successfully.',
+            'quantity' => $validated['quantity'],
+        ]);
     }
 
     /**

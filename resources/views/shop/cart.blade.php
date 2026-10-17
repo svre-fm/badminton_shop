@@ -6,6 +6,7 @@
         x-data="{
             cart_items: @js($cartItems ?? []),
             notice: '',
+            updating: [],
             init() { this.cart_items = this.cart_items.map(cart_item => ({ ...cart_item, checked: true })) },
             get all() { return this.cart_items.length > 0 && this.cart_items.every(cart_item => cart_item.checked) },
             set all(value) { this.cart_items.forEach(cart_item => cart_item.checked = value) },
@@ -13,18 +14,45 @@
             get total() { return this.picked.reduce((sum, cart_item) => sum + cart_item.product.price * cart_item.quantity, 0) },
             get totalQuantity() { return this.picked.reduce((sum, cart_item) => sum + cart_item.quantity, 0) },
             key(cart_item) { return [cart_item.customer_id, cart_item.product_id, cart_item.color, cart_item.tension ?? 0].join('|') },
-            save() {
-                // TODO: ส่ง cart_item.customer_id/product_id/color/tension/quantity ไป CartController
-                // ให้ server ตรวจ customer ownership, product_variant.stock และ cart_item.tension ก่อน update/delete
-                this.notice = 'Cart changes are not saved until the CartController is connected.';
-            },
             remove(cart_item) {
                 this.cart_items = this.cart_items.filter(item => this.key(item) !== this.key(cart_item));
-                this.save();
             },
-            changeQuantity(cart_item, amount) {
-                cart_item.quantity = Math.max(1, Number(cart_item.quantity) + amount);
-                this.save();
+            async changeQuantity(cart_item, amount) {
+                const itemKey = this.key(cart_item);
+                if (this.updating[itemKey]) return;
+
+                const previousQuantity = Number(cart_item.quantity);
+                const quantity = Math.max(1, previousQuantity + amount);
+                if (quantity === previousQuantity) return;
+
+                this.updating[itemKey] = true;
+                this.notice = '';
+
+                try {
+                    const response = await fetch(
+                        @js(route('cart')) + '/' + encodeURIComponent(cart_item.product_id) + '/' + encodeURIComponent(cart_item.color),
+                        {
+                            method: 'PATCH',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': @js(csrf_token()),
+                            },
+                            body: JSON.stringify({ quantity }),
+                        }
+                    );
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.message || Object.values(data.errors ?? {}).flat()[0] || 'Could not update the cart.');
+                    }
+
+                    cart_item.quantity = data.quantity;
+                } catch (error) {
+                    this.notice = error.message || 'Could not update the cart.';
+                } finally {
+                    this.updating[itemKey] = false;
+                }
             },
             purchase() {
                 if (!this.picked.length) return;
@@ -61,9 +89,9 @@
                             <h2 class="text-xl font-bold sm:text-2xl" x-text="cart_item.product.name"></h2>
                             <p class="mt-2 text-xs text-muted sm:text-sm" x-text="'Color: ' + cart_item.color + (cart_item.tension ? ' · Tension: ' + cart_item.tension + ' lbs' : '')"></p>
                             <div class="mt-3 flex items-center gap-3">
-                                <button type="button" @click="changeQuantity(cart_item, -1)" class="grid size-7 place-items-center rounded-full bg-brand text-white" aria-label="Decrease">−</button>
+                                <button type="button" @click="changeQuantity(cart_item, -1)" :disabled="updating[key(cart_item)]" class="grid size-7 place-items-center rounded-full bg-brand text-white disabled:opacity-50" aria-label="Decrease">−</button>
                                 <span class="w-6 text-center text-lg" x-text="cart_item.quantity"></span>
-                                <button type="button" @click="changeQuantity(cart_item, 1)" class="grid size-7 place-items-center rounded-full bg-brand text-white" aria-label="Increase">+</button>
+                                <button type="button" @click="changeQuantity(cart_item, 1)" :disabled="updating[key(cart_item)]" class="grid size-7 place-items-center rounded-full bg-brand text-white disabled:opacity-50" aria-label="Increase">+</button>
                                 <button type="button" @click="remove(cart_item)" class="ml-2 text-sm text-muted hover:text-ink sm:hidden">Remove</button>
                             </div>
                         </div>

@@ -43,6 +43,9 @@ Route::middleware('auth')->group(function () {
         ->name('cart');
     Route::post('/cart_item', [CartController::class, 'store'])
         ->name('cart.store');
+    Route::patch('/cart_item/{productId}/{color}', [CartController::class, 'update'])
+        ->whereNumber('productId')
+        ->name('cart.update');
 
     // Route Methods
     // get	Read data (e.g., Route::get('/users', ...))
