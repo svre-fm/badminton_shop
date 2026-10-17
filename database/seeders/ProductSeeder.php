@@ -580,26 +580,7 @@ class ProductSeeder extends Seeder
 
     private function productName(array $definition): string
     {
-        $brand = strtoupper($definition['brand']);
-
-        return match ($definition['type']) {
-            'RACKET' => sprintf(
-                '%s - %s %s - %s - %d lbs - %s',
-                $brand,
-                $definition['model'],
-                $definition['colors'][0],
-                $definition['weight'],
-                $definition['max_tension'],
-                $definition['grip_size'],
-            ),
-            'SHUTTLECOCK' => sprintf(
-                '%s - %s (%s speed)',
-                $brand,
-                $definition['model'],
-                $definition['speed'],
-            ),
-            default => sprintf('%s - %s', $brand, $definition['model']),
-        };
+        return sprintf('%s - %s', strtoupper($definition['brand']), $definition['model']);
     }
 
     private function racketDescription(array $definition): string
