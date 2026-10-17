@@ -19,7 +19,12 @@
                     window.location.href = @js(Route::has('login') ? route('login') : url('/'));
                     return;
                 }
-                if (res.ok) this.active = (await res.json()).favorited;
+                if (res.ok) {
+                    this.active = (await res.json()).favorited;
+                    window.dispatchEvent(new CustomEvent('favorite-toggled', {
+                        detail: { productId: id, favorited: this.active },
+                    }));
+                }
             } finally {
                 this.busy = false;
             }

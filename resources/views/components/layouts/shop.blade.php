@@ -25,6 +25,8 @@
                 @endif
 
                 @auth
+                    <a href="{{ route('favorites.index') }}" @class(['font-bold text-ink' => $active === 'favorites', 'text-muted' => $active !== 'favorites'])>FAVORITES</a>
+                    <a href="{{ route('orders.status') }}" @class(['font-bold text-ink' => $active === 'orders', 'text-muted' => $active !== 'orders'])>MY ORDERS</a>
                     <a href="{{ Route::has('dashboard') ? route('dashboard') : '#' }}" class="rounded-full bg-mist px-4 py-1">{{ auth()->user()->name }}</a>
                 @else
                     @if (Route::has('login'))

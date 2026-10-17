@@ -11,8 +11,6 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/products/{product:product_id}', [ProductController::class, 'show'])->name('products.show');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/', [ProductController::class, 'home'])->name('home');
-
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
     Route::post('/favorites/{product:product_id}', [FavoriteController::class, 'toggle'])->name('favorites.toggle');
     Route::get('/orders/status', [StatusController::class, 'index'])->name('orders.status');
