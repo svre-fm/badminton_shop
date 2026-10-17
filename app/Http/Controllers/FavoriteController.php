@@ -3,52 +3,43 @@
 namespace App\Http\Controllers;
 
 use App\Models\products;
-use Illuminate\Contracts\View\View;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FavoriteController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request)
     {
         $favorites = $request->user()
             ->favorites()
+            ->with(['variants'])
             ->withAvg('reviews', 'star')
             ->orderBy('products.product_id')
-            ->paginate(20);
+            ->get();
 
-        $favorites->getCollection()->transform(function (products $product) {
-            $path = $product->image;
-            $product->image = $path
-                && ! str_starts_with($path, 'http://')
-                && ! str_starts_with($path, 'https://')
-                && ! str_starts_with($path, '/')
-                ? asset($path)
-                : $path;
-
-            return $product;
-        });
-
-        return view('shop.favorites', compact('favorites'));
+        return view('favorites.index', compact('favorites'));
     }
 
     /**
      * กดหัวใจ: ถ้ายังไม่มีในรายการโปรดให้เพิ่ม ถ้ามีแล้วให้ลบ
      * ตาราง favorites มีคอลัมน์ customer_id, product_id (customer_id = users.id)
      */
-    public function toggle(Request $request, products $product): RedirectResponse
+    public function toggle(Request $request, products $product): JsonResponse
     {
-        $validated = $request->validate([
-            'favorited' => ['required', 'boolean'],
-        ]);
+        $row = [
+            'customer_id' => $request->user()->id,
+            'product_id'  => $product->product_id,
+        ];
 
-        $favorites = $request->user()->favorites();
-        if ($validated['favorited']) {
-            $favorites->syncWithoutDetaching([$product->product_id]);
+        if (DB::table('favorites')->where($row)->exists()) {
+            DB::table('favorites')->where($row)->delete();
+            $favorited = false;
         } else {
-            $favorites->detach($product->product_id);
+            DB::table('favorites')->insert($row);
+            $favorited = true;
         }
 
-        return back();
+        return response()->json(['favorited' => $favorited]);
     }
 }
