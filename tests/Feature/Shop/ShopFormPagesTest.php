@@ -87,7 +87,10 @@ class ShopFormPagesTest extends TestCase
                 'rating' => 4.5,
                 'image' => '/images/club-racket.jpg',
                 'images' => [],
-                'product_variants' => [['color' => 'Black', 'stock' => 5]],
+                'product_variants' => [
+                    ['color' => 'Black', 'stock' => 5],
+                    ['color' => 'Black/Cherry', 'stock' => 2],
+                ],
                 'description' => 'Product description',
             ],
             'max_tension' => 28,
@@ -98,6 +101,7 @@ class ShopFormPagesTest extends TestCase
             ->assertSee('Club racket')
             ->assertSee('min="18"', false)
             ->assertSee('max="28"', false)
+            ->assertSee('background: linear-gradient(90deg, #000000 0% 50%, #8b1e3f 50% 100%)', false)
             ->assertSee('Enter a value from 18 to 28 lbs')
             ->assertSee('3 star (1)')
             ->assertSee('ratingFilter === 3', false)
@@ -146,7 +150,15 @@ class ShopFormPagesTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
-            ->assertSee('Product categories will appear here when available.')
+            ->assertSee('Badminton racket')
+            ->assertSee('Badminton string')
+            ->assertSee('Grip')
+            ->assertSee('Shuttlecock')
+            ->assertSee('badminton-racket-icon.png')
+            ->assertSee('badminton-string-icon.png')
+            ->assertSee('grip-icon.png')
+            ->assertSee('shuttlecock-icon.png')
+            ->assertSee(route('shop.index', ['category' => 'badminton-racket']), false)
             ->assertDontSee('Racket 1');
 
         $this->get(route('shop.index', ['category' => 'badminton-racket']))

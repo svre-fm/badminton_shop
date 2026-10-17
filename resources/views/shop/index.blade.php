@@ -66,6 +66,7 @@
             category: @js($category),
             product_type: @js($product_type),
             categoryTitles: @js($category_titles),
+            swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
             products: @js($products),
             brandOptions: @js($brands),
             groups: @js($active_filters),
@@ -88,6 +89,13 @@
                 { value: 'low', label: 'Price: low to high' },
                 { value: 'high', label: 'Price: high to low' },
             ],
+            swatchStyle(value) {
+                const colors = String(value ?? '').split('/').map(color => this.swatchPalette[color.trim().toLowerCase()] ?? '#808080');
+                if (colors.length === 1) return colors[0];
+                const segment = 100 / colors.length;
+                const stops = colors.map((color, index) => `${color} ${index * segment}% ${(index + 1) * segment}%`);
+                return `linear-gradient(90deg, ${stops.join(', ')})`;
+            },
             get priceLow() {
                 return this.filters.min === null || this.filters.min === ''
                     ? this.priceMin
@@ -305,7 +313,7 @@
                                     <template x-for="(label, value) in group.options" :key="value">
                                         <label class="cursor-pointer" :aria-label="label" :title="label">
                                             <input type="checkbox" :name="'filters[' + group.key + '][]'" :value="value" x-model="filters[group.key]" @change="syncQuery()" class="peer sr-only">
-                                            <span class="grid size-8 place-items-center rounded-full border border-black/10 ring-2 ring-transparent ring-offset-2 peer-checked:ring-brand peer-focus-visible:ring-brand" :style="'background-color: ' + value">
+                                            <span class="grid size-8 place-items-center rounded-full border border-black/10 ring-2 ring-transparent ring-offset-2 peer-checked:ring-brand peer-focus-visible:ring-brand" :style="'background: ' + swatchStyle(value)">
                                                 <svg x-show="filters[group.key].includes(value)" class="size-4 text-white drop-shadow" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg>
                                             </span>
                                             <span class="sr-only" x-text="label"></span>
@@ -507,7 +515,7 @@
                         <template x-if="product_type === 'RACKET' && product.product_variants?.length">
                             <div class="mt-2 flex items-center gap-1.5" aria-label="Product color">
                                 <template x-for="product_variant in product.product_variants" :key="product_variant.product_id + product_variant.color">
-                                    <span class="size-3 rounded-full border border-black/10" :style="'background-color: ' + product_variant.color" :title="product_variant.color"></span>
+                                    <span class="size-3 rounded-full border border-black/10" :style="'background: ' + swatchStyle(product_variant.color)" :title="product_variant.color"></span>
                                 </template>
                             </div>
                         </template>

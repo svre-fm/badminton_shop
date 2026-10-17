@@ -1,6 +1,11 @@
 @php
-    // HomeController ต้องส่ง categories และ bestSellers จากฐานข้อมูล; หน้านี้ไม่มีข้อมูลสินค้า/หมวดจำลอง
-    $categories = collect($categories ?? []);
+    // หมวดสินค้าเป็นตัวเลือกนำทางคงที่ ไม่ใช่ข้อมูลสินค้าจำลอง จึงแสดงได้โดยไม่ต้องรอ HomeController
+    $categories = [
+        ['name' => 'Badminton racket', 'slug' => 'badminton-racket', 'image' => 'badminton-racket-icon.png'],
+        ['name' => 'Badminton string', 'slug' => 'badminton-string', 'image' => 'badminton-string-icon.png'],
+        ['name' => 'Grip', 'slug' => 'grip', 'image' => 'grip-icon.png'],
+        ['name' => 'Shuttlecock', 'slug' => 'shuttlecock', 'image' => 'shuttlecock-icon.png'],
+    ];
     $bestSellers = collect($bestSellers ?? []);
 @endphp
 
@@ -14,8 +19,6 @@
         {{-- Categories --}}
         <section class="mt-10 text-center sm:mt-14" aria-labelledby="cat-title">
             <h2 id="cat-title" class="text-3xl font-bold sm:text-4xl">Category</h2>
-
-            @if ($categories->isNotEmpty())
             <ul class="mt-6 flex flex-wrap justify-center gap-4 sm:mt-8 sm:gap-8">
                 @foreach ($categories as $c)
                     <li>
@@ -30,11 +33,7 @@
                     </li>
                 @endforeach
             </ul>
-            @else
-                <p class="mt-6 text-sm text-muted">Product categories will appear here when available.</p>
-            @endif
         </section>
-
         {{-- Best seller carousel --}}
         @if ($bestSellers->isNotEmpty())
         <section class="mt-12 sm:mt-16" x-data="{

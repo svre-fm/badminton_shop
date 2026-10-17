@@ -43,8 +43,16 @@
                 tensionError: '',
                 requiresTension: @js($requires_tension),
                 color: @js(data_get($product, 'product_variants.0.color')),
+                swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
                 quantity: 1,
                 notice: '',
+                swatchStyle(value) {
+                    const colors = String(value ?? '').split('/').map(color => this.swatchPalette[color.trim().toLowerCase()] ?? '#808080');
+                    if (colors.length === 1) return colors[0];
+                    const segment = 100 / colors.length;
+                    const stops = colors.map((color, index) => `${color} ${index * segment}% ${(index + 1) * segment}%`);
+                    return `linear-gradient(90deg, ${stops.join(', ')})`;
+                },
                 validateTension() {
                     if (!this.requiresTension) {
                         this.tension = 0;
@@ -135,7 +143,7 @@
                         aria-label="Select color {{ data_get($product_variant, 'color') }}"
                         :class="color === @js(data_get($product_variant, 'color')) ? 'ring-brand' : 'ring-transparent'"
                         class="grid size-7 place-items-center rounded-full border border-black/10 ring-2 ring-offset-2"
-                        style="background-color: {{ data_get($product_variant, 'color') }}"
+                        style="background: {{ \App\Support\ProductColorSwatch::cssBackground(data_get($product_variant, 'color')) }}"
                     >
                         <svg x-show="color === @js(data_get($product_variant, 'color'))" class="size-4 text-white mix-blend-difference" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg>
                     </button>

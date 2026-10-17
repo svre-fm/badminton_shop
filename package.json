@@ -4,7 +4,9 @@
     "type": "module",
     "scripts": {
         "build": "vp build",
-        "dev": "vp dev"
+        "dev": "vp dev",
+        "db:reset": "php artisan migrate:fresh && php artisan db:seed"
+
     },
     "dependencies": {
         "@laravel/passkeys": "^0.2.0",
