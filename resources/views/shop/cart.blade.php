@@ -4,7 +4,7 @@
     <div
         class="mt-6"
         x-data="{
-            cart_items: @js($cart_items ?? []),
+            cart_items: @js($cartItems ?? []),
             notice: '',
             init() { this.cart_items = this.cart_items.map(cart_item => ({ ...cart_item, checked: true })) },
             get all() { return this.cart_items.length > 0 && this.cart_items.every(cart_item => cart_item.checked) },

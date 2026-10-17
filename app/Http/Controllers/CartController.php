@@ -14,12 +14,12 @@ class CartController extends Controller
      */
     public function index()
     {
-        // ดึงข้อมูลตะกร้าของลูกค้าปัจจุบัน พร้อม Eager Load สินค้าหลักและรุ่นย่อย (สี) เพื่อนำไปแสดงผล
+        // Eager load the product relationship; variantRecord() is a query helper, not a relationship.
         $cartItems = Auth::user()->cartItems()
-            ->with(['product', 'variantRecord'])
+            ->with('product')
             ->get();
 
-        return view('cart.index', compact('cartItems'));
+        return view('shop.cart', compact('cartItems'));
     }
 
     /**
