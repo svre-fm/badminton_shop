@@ -21,6 +21,12 @@ class OrderSeeder extends Seeder
         $today = Carbon::today();
         $perDay = [];
         $rows = [];
+        $demoStatuses = [
+            SeedHelper::STATUS_TO_SHIP,
+            SeedHelper::STATUS_TO_RECIEVE,
+            SeedHelper::STATUS_COMPLETE,
+            SeedHelper::STATUS_CANCELLED,
+        ];
 
         foreach (DB::table('users')->orderBy('id')->pluck('id') as $index => $userId) {
             $userAddresses = $addresses->get($userId);
@@ -30,11 +36,14 @@ class OrderSeeder extends Seeder
 
             $count = SeedHelper::weighted([0 => 20, 1 => 25, 2 => 25, 3 => 15, 4 => 10, 5 => 5]);
             if ($index === 0) {
-                $count = max($count, 4); // demo user ให้มีประวัติสั่งซื้อพอทดสอบ
+                $count = max($count, count($demoStatuses)); // demo user ให้มีครบทุกสถานะ
             }
 
             for ($i = 0; $i < $count; $i++) {
-                $age = mt_rand(1, 280);
+                $status = $index === 0 && $i < count($demoStatuses)
+                    ? $demoStatuses[$i]
+                    : $this->randomStatus();
+                $age = $this->ageForStatus($status);
                 $date = $today->copy()->subDays($age);
                 $key = $date->format('Ymd');
                 $perDay[$key] = ($perDay[$key] ?? 0) + 1;
@@ -44,7 +53,7 @@ class OrderSeeder extends Seeder
                 $rows[] = [
                     'order_no' => sprintf('ORD%s-%04d', $key, $perDay[$key]),
                     'customer_id' => $userId,
-                    'status' => $this->statusFor($age),
+                    'status' => $status,
                     'order_date' => $date->toDateString(),
                     'delivery_id' => $address->delivery_id,
                     'total_price' => 0,
@@ -57,29 +66,24 @@ class OrderSeeder extends Seeder
         }
     }
 
-    /** สถานะสมเหตุสมผลตามอายุของ order (วัน) */
-    private function statusFor(int $ageDays): string
+    private function randomStatus(): string
     {
-        if ($ageDays <= 1) {
-            return SeedHelper::weighted([
-                SeedHelper::STATUS_PENDING => 60,
-                SeedHelper::STATUS_PAID => 30,
-                SeedHelper::STATUS_CANCELLED => 10,
-            ]);
-        }
-
-        if ($ageDays <= 5) {
-            return SeedHelper::weighted([
-                SeedHelper::STATUS_PAID => 35,
-                SeedHelper::STATUS_SHIPPED => 50,
-                SeedHelper::STATUS_CANCELLED => 10,
-                SeedHelper::STATUS_PENDING => 5,
-            ]);
-        }
-
         return SeedHelper::weighted([
-            SeedHelper::STATUS_DELIVERED => 88,
+            SeedHelper::STATUS_TO_SHIP => 40,
+            SeedHelper::STATUS_TO_RECIEVE => 30,
+            SeedHelper::STATUS_COMPLETE => 18,
             SeedHelper::STATUS_CANCELLED => 12,
         ]);
+    }
+
+    private function ageForStatus(string $status): int
+    {
+        return match ($status) {
+            SeedHelper::STATUS_TO_SHIP => mt_rand(1, 5),
+            SeedHelper::STATUS_TO_RECIEVE => mt_rand(2, 10),
+            SeedHelper::STATUS_COMPLETE => mt_rand(6, 280),
+            SeedHelper::STATUS_CANCELLED => mt_rand(1, 280),
+            default => throw new \InvalidArgumentException("Unsupported order status: {$status}"),
+        };
     }
 }

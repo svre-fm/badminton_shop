@@ -15,12 +15,12 @@ class PaymentSeeder extends Seeder
 
         $cards = DB::table('credit_debit_cards')->get()->groupBy('user_id');
 
-        // เฉพาะ order ที่จ่ายแล้ว (pending / cancelled ไม่มี payment)
+        // เฉพาะ order ที่อยู่ในขั้นตอนจัดส่งหรือเสร็จสมบูรณ์
         $orders = DB::table('orders')
             ->whereIn('status', [
-                SeedHelper::STATUS_PAID,
-                SeedHelper::STATUS_SHIPPED,
-                SeedHelper::STATUS_DELIVERED,
+                SeedHelper::STATUS_TO_SHIP,
+                SeedHelper::STATUS_TO_RECIEVE,
+                SeedHelper::STATUS_COMPLETE,
             ])
             ->orderBy('order_no')
             ->get();
