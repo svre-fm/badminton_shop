@@ -495,7 +495,7 @@
             <div x-show="results.length" class="mt-6 grid grid-cols-2 gap-x-4 gap-y-7 sm:gap-6 md:grid-cols-3 xl:grid-cols-4">
                 <template x-for="product in results" :key="product.product_id">
                     <article class="group relative w-full">
-                        <div class="relative aspect-square overflow-hidden rounded-xl bg-tile ring-2 ring-transparent transition group-hover:ring-ink">
+                        <div class="relative aspect-square overflow-hidden rounded-xl bg-tile ring-2 ring-transparent transition group-hover:ring-ink border border-mist">
                             <template x-if="product.image">
                                 <img :src="product.image" :alt="product.name" loading="lazy" class="size-full object-cover">
                             </template>
@@ -503,9 +503,16 @@
                                 <div class="grid size-full place-items-center bg-page text-sm font-medium text-muted" x-text="categoryTitles[category]"></div>
                             </template>
                             <a :href="'/product/' + category + '/' + product.product_id" class="absolute inset-0 z-0" :aria-label="product.name"></a>
-                            <span x-show="product.rating !== null && product.rating !== undefined" class="absolute bottom-2 right-2 z-10 flex items-center gap-1 rounded border border-star/60 bg-amber-50 px-1.5 text-xs font-medium">
+                            {{-- ดาว: มุมขวาบน --}}
+                            <span x-show="product.rating !== null && product.rating !== undefined"
+                                class="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-1 rounded border border-star/60 bg-amber-50 px-1.5 text-xs font-medium">
                                 <span class="text-star">★</span><span x-text="product.rating"></span>
                             </span>
+
+                            {{-- หัวใจ: มุมขวาล่าง --}}
+                            <div class="absolute bottom-2 right-2 z-10">
+                                <x-shop.product-heart compact />
+                            </div>
                         </div>
                         <p class="mt-2 text-xs text-muted" x-text="product.brand"></p>
                         <div class="flex items-baseline justify-between gap-2 text-sm">

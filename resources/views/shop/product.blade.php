@@ -42,6 +42,8 @@
                 maxTension: @js($max_tension),
                 tensionError: '',
                 requiresTension: @js($requires_tension),
+                isAuthenticated: @js(auth()->check()),
+                loginUrl: @js(route('login', ['return_to' => request()->getRequestUri()])),
                 color: @js(data_get($product, 'product_variants.0.color')),
                 swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
                 quantity: 1,
@@ -83,21 +85,31 @@
                     return true;
                 },
                 addToCart() {
+                    if (!this.isAuthenticated) {
+                        window.location.assign(this.loginUrl);
+                        return;
+                    }
                     if (!this.validateTension()) return;
                     // ให้ CartController บันทึก product/variant/tension/quantity โดยตรวจราคาและ stock จากฐานข้อมูล
                     this.notice = 'Cart service is not connected yet.';
                 },
                 buyNow() {
+                    if (!this.isAuthenticated) {
+                        window.location.assign(this.loginUrl);
+                        return;
+                    }
                     if (!this.validateTension()) return;
                     // ให้ CheckoutController สร้าง checkout จากข้อมูลสินค้าฝั่ง server ไม่รับราคา/รายการจาก browser
                     this.notice = 'Checkout service is not connected yet.';
                 }
             }"
         >
-            <div class="flex items-center gap-3">
-                <h1 class="text-4xl font-bold">{{ data_get($product, 'name') }}</h1>
+            <div class="flex items-start gap-3">
+                <h1 class="min-w-0 text-4xl font-bold">{{ data_get($product, 'name') }}</h1>
                 @if (data_get($product, 'rating'))
-                    <span class="rounded border border-star/60 bg-amber-50 px-2 text-lg"><span class="text-star">★</span> {{ data_get($product, 'rating') }}</span>
+                    <span class="mt-1 inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded border border-star/60 bg-amber-50 px-2 text-lg">
+                        <span class="text-star">★</span> {{ data_get($product, 'rating') }}
+                    </span>
                 @endif
             </div>
             <x-shop.price :amount="data_get($product, 'price')" :decimals="2" class="mt-2 text-4xl font-bold text-brand" />
@@ -161,8 +173,8 @@
                 </div>
                 <button type="button" @click="addToCart()" class="rounded bg-mist px-5 py-2 transition hover:bg-brand hover:text-white">Add to cart</button>
                 <button type="button" @click="buyNow()" class="rounded bg-ink px-8 py-2 text-white transition hover:bg-brand">Buy</button>
-                <x-shop.product-heart />
             </div>
+            <x-shop.product-heart />
             <p x-cloak x-show="notice" role="status" class="mt-4 text-sm font-medium text-brand">
                 <span x-text="notice"></span>
             </p>
@@ -210,10 +222,16 @@
 
             <ul class="mt-8 grid gap-x-12 gap-y-6 md:grid-cols-2">
                 @foreach ($reviews as $review)
+                    @php
+                        $review_date = data_get($review, 'date');
+                        $review_date = $review_date
+                            ? \Illuminate\Support\Carbon::parse($review_date)->toDateString()
+                            : null;
+                    @endphp
                     <li x-show="ratingFilter === null || ratingFilter === {{ data_get($review, 'star') }}" class="border-b border-muted/50 pb-4">
                         <div class="flex items-center gap-3">
                             <div>
-                                <p class="text-xl">{{ data_get($review, 'customer.name') }} <span class="text-xs text-muted">{{ data_get($review, 'date') }}</span></p>
+                                <p class="text-xl">{{ data_get($review, 'customer.name') }} <span class="text-xs text-muted">{{ $review_date }}</span></p>
                                 <p class="text-star" aria-label="{{ data_get($review, 'star') }} stars">{{ str_repeat('★', data_get($review, 'star')) }}<span class="text-zinc-200">{{ str_repeat('★', 5 - data_get($review, 'star')) }}</span></p>
                             </div>
                         </div>

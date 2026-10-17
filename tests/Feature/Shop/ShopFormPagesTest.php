@@ -95,17 +95,22 @@ class ShopFormPagesTest extends TestCase
             ],
             'max_tension' => 28,
             'reviews' => collect([
-                ['name' => 'Reviewer', 'date' => 'Today', 'star' => 3, 'comment' => 'Review content'],
+                ['name' => 'Reviewer', 'date' => '2026-10-17 14:30:45', 'star' => 3, 'comment' => 'Review content'],
             ]),
         ])
             ->assertSee('Club racket')
+            ->assertSee('isAuthenticated: false', false)
+            ->assertSee('window.location.assign(this.loginUrl)', false)
+            ->assertSee('Log in to add this product to favorites')
             ->assertSee('min="18"', false)
             ->assertSee('max="28"', false)
             ->assertSee('background: linear-gradient(90deg, #000000 0% 50%, #8b1e3f 50% 100%)', false)
             ->assertSee('Enter a value from 18 to 28 lbs')
             ->assertSee('3 star (1)')
             ->assertSee('ratingFilter === 3', false)
-            ->assertSee('Review content');
+            ->assertSee('Review content')
+            ->assertSee('2026-10-17')
+            ->assertDontSee('14:30:45');
     }
 
     public function test_order_status_page_shows_empty_state_without_controller_data(): void
