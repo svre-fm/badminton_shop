@@ -3,31 +3,52 @@
 namespace App\Http\Controllers;
 
 use App\Models\products;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class FavoriteController extends Controller
 {
+    public function index(Request $request): View
+    {
+        $favorites = $request->user()
+            ->favorites()
+            ->withAvg('reviews', 'star')
+            ->orderBy('products.product_id')
+            ->paginate(20);
+
+        $favorites->getCollection()->transform(function (products $product) {
+            $path = $product->image;
+            $product->image = $path
+                && ! str_starts_with($path, 'http://')
+                && ! str_starts_with($path, 'https://')
+                && ! str_starts_with($path, '/')
+                ? asset($path)
+                : $path;
+
+            return $product;
+        });
+
+        return view('shop.favorites', compact('favorites'));
+    }
+
     /**
      * กดหัวใจ: ถ้ายังไม่มีในรายการโปรดให้เพิ่ม ถ้ามีแล้วให้ลบ
      * ตาราง favorites มีคอลัมน์ customer_id, product_id (customer_id = users.id)
      */
-    public function toggle(Request $request, products $product): JsonResponse
+    public function toggle(Request $request, products $product): RedirectResponse
     {
-        $row = [
-            'customer_id' => $request->user()->id,
-            'product_id'  => $product->product_id,
-        ];
+        $validated = $request->validate([
+            'favorited' => ['required', 'boolean'],
+        ]);
 
-        if (DB::table('favorites')->where($row)->exists()) {
-            DB::table('favorites')->where($row)->delete();
-            $favorited = false;
+        $favorites = $request->user()->favorites();
+        if ($validated['favorited']) {
+            $favorites->syncWithoutDetaching([$product->product_id]);
         } else {
-            DB::table('favorites')->insert($row);
-            $favorited = true;
+            $favorites->detach($product->product_id);
         }
 
-        return response()->json(['favorited' => $favorited]);
+        return back();
     }
 }

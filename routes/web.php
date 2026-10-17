@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/home')->name('root');
 
-Route::view('/home', 'home')->name('home');
+Route::get('/home', [ProductController::class, 'home'])->name('home');
 
 Route::get('/shop', function () {
     $category = request()->query('category', 'badminton-racket');
@@ -45,7 +46,10 @@ Route::middleware('auth')->group(function () {
     Route::view('/review', 'shop.review')->name('review.create');
 
     Route::redirect('/favorites', '/favorite')->name('favorites.legacy');
-    Route::view('/favorite', 'shop.favorites')->name('favorites');
+    Route::get('/favorite', [FavoriteController::class, 'index'])->name('favorites');
+    Route::post('/favorite/{product}/toggle', [FavoriteController::class, 'toggle'])
+        ->whereNumber('product')
+        ->name('favorites.toggle');
 
     Route::redirect('/orders', '/status-delivery')->name('orders.legacy');
     Route::view('/status-delivery', 'shop.orders')->name('orders');

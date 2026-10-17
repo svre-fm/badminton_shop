@@ -173,8 +173,9 @@
                 </div>
                 <button type="button" @click="addToCart()" class="rounded bg-mist px-5 py-2 transition hover:bg-brand hover:text-white">Add to cart</button>
                 <button type="button" @click="buyNow()" class="rounded bg-ink px-8 py-2 text-white transition hover:bg-brand">Buy</button>
+                <x-shop.product-heart :product-id="data_get($product, 'product_id')" :favorited="$is_favorited ?? false" />
             </div>
-            <x-shop.product-heart />
+            
             <p x-cloak x-show="notice" role="status" class="mt-4 text-sm font-medium text-brand">
                 <span x-text="notice"></span>
             </p>

@@ -1,5 +1,5 @@
 @php
-    // FavoriteController ต้องส่ง Laravel paginator ของรายการโปรดจริงที่เป็นของสมาชิกปัจจุบัน
+    // FavoriteController ส่ง Laravel paginator ของสินค้าที่สมาชิกปัจจุบันบันทึกไว้
     $favorites = $favorites ?? collect();
 @endphp
 <x-layouts.shop title="Favorites">
@@ -11,7 +11,7 @@
         <div class="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4 xl:grid-cols-5">
             @foreach ($favorites as $favorite)
                 @php
-                    $product = data_get($favorite, 'product');
+                    $product = $favorite;
                     $category = match (data_get($product, 'product_type')) {
                         'RACKET' => 'badminton-racket',
                         'STRING' => 'badminton-string',
@@ -19,15 +19,18 @@
                         'SHUTTLECOCK' => 'shuttlecock',
                         default => 'badminton-racket',
                     };
+                    $rating = data_get($product, 'reviews_avg_star');
                 @endphp
                 <x-shop.product-card
                     :name="data_get($product, 'name')"
                     :price="data_get($product, 'price')"
                     :image="data_get($product, 'image')"
-                    :rating="data_get($product, 'rating')"
+                    :rating="$rating !== null ? round((float) $rating, 1) : null"
                     :favorited="true"
+                    :product-id="data_get($product, 'product_id')"
                     :href="route('shop.product', ['category' => $category, 'product_id' => data_get($product, 'product_id')])"
-                />
+                    class="border border-mis"
+                    />
             @endforeach
         </div>
         @if (method_exists($favorites, 'lastPage') && $favorites->lastPage() > 1)

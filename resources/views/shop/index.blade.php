@@ -68,6 +68,10 @@
             categoryTitles: @js($category_titles),
             swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
             products: @js($products),
+            favoriteProductIds: @js($favorite_product_ids ?? []),
+            isAuthenticated: @js(auth()->check()),
+            favoriteToggleUrl: @js(route('favorites.toggle', ['product' => '__PRODUCT__'])),
+            loginUrl: @js(route('login', ['return_to' => request()->getRequestUri()])),
             brandOptions: @js($brands),
             groups: @js($active_filters),
             filters: {
@@ -511,7 +515,30 @@
 
                             {{-- หัวใจ: มุมขวาล่าง --}}
                             <div class="absolute bottom-2 right-2 z-10">
-                                <x-shop.product-heart compact />
+                                <template x-if="isAuthenticated">
+                                    <form method="POST" :action="favoriteToggleUrl.replace('__PRODUCT__', product.product_id)" @click.stop>
+                                        @csrf
+                                        <input type="hidden" name="favorited" :value="favoriteProductIds.includes(Number(product.product_id)) ? 0 : 1">
+                                        <button type="submit"
+                                            :aria-pressed="favoriteProductIds.includes(Number(product.product_id)) ? 'true' : 'false'"
+                                            :aria-label="favoriteProductIds.includes(Number(product.product_id)) ? 'Remove from favorites' : 'Add to favorites'"
+                                            class="inline-flex cursor-pointer text-heart/60 transition hover:text-heart"
+                                            :class="favoriteProductIds.includes(Number(product.product_id)) ? 'text-heart' : ''">
+                                            <svg class="size-5" viewBox="0 0 24 24" stroke="#ff7373" stroke-width="1.5"
+                                                :fill="favoriteProductIds.includes(Number(product.product_id)) ? '#ff7373' : 'none'">
+                                                <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </template>
+                                <template x-if="!isAuthenticated">
+                                    <a :href="loginUrl" aria-label="Log in to add this product to favorites"
+                                        class="inline-flex cursor-pointer text-heart/60 transition hover:text-heart">
+                                        <svg class="size-5" viewBox="0 0 24 24" stroke="#ff7373" stroke-width="1.5" fill="none" aria-hidden="true">
+                                            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
+                                        </svg>
+                                    </a>
+                                </template>
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-muted" x-text="product.brand"></p>

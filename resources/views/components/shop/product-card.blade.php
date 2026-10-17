@@ -4,12 +4,13 @@
     'image' => null,
     'rating' => null,
     'favorited' => null,   // null = hide heart
+    'productId' => null,
     'colors' => [],
     'href' => null,
 ])
 
 <article class="group relative w-full">
-    <div class="relative aspect-square overflow-hidden rounded-xl bg-tile ring-2 ring-transparent transition group-hover:ring-ink">
+    <div class="relative aspect-square overflow-hidden rounded-xl bg-tile ring-2 ring-transparent transition group-hover:ring-ink border border-mist">
         @if ($image)
             <img src="{{ $image }}" alt="" loading="lazy" class="size-full object-cover">
         @endif
@@ -17,23 +18,17 @@
         {{-- Stretched link covers the card; badge/heart sit above it (z-10) --}}
         <a href="{{ $href }}" class="absolute inset-0 z-0" aria-label="{{ $name }}"></a>
 
-        @if ($rating || $favorited !== null)
-            <div class="absolute bottom-2 right-2 z-10 flex items-center gap-1.5">
-                @if ($rating)
-                    <span class="flex items-center gap-0.5 rounded border border-star/60 bg-amber-50 px-1.5 text-xs font-medium">
-                        <span class="text-star">★</span>{{ $rating }}
-                    </span>
-                @endif
-                @if ($favorited !== null)
-                    {{-- ตอนนี้หัวใจเปลี่ยนแค่สถานะบนหน้าจอ ให้เชื่อม FavoriteController เพื่อบันทึก favorite จริง --}}
-                    <button type="button" aria-label="Toggle favorite" aria-pressed="{{ $favorited ? 'true' : 'false' }}"
-                            x-data="{ on: {{ $favorited ? 'true' : 'false' }} }" @click.stop="on = !on"
-                            :class="on ? 'text-heart' : 'text-ink/60'">
-                        <svg class="size-5" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" :fill="on ? 'currentColor' : 'none'">
-                            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
-                        </svg>
-                    </button>
-                @endif
+        {{-- ดาว: มุมขวาบน --}}
+        @if ($rating)
+            <span class="pointer-events-none absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded border border-star/60 bg-amber-50 px-1.5 text-xs font-medium">
+                <span class="text-star">★</span>{{ $rating }}
+            </span>
+        @endif
+
+        {{-- หัวใจ: มุมขวาล่าง --}}
+        @if ($favorited !== null)
+            <div class="absolute bottom-2 right-2 z-10">
+                <x-shop.product-heart compact :product-id="$productId" :favorited="$favorited" />
             </div>
         @endif
     </div>

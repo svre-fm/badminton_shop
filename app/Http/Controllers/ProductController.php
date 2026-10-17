@@ -9,7 +9,40 @@ use Illuminate\Support\Facades\DB;
 class ProductController extends Controller
 {
     /** สถานะคำสั่งซื้อที่นับเป็น "ขายแล้ว" สำหรับอันดับสินค้าขายดี (orders.status) */
-    public const SOLD_STATUS = 'complete';
+    public const SOLD_STATUS = 'Complete';
+
+    public function home()
+    {
+        $completedOrderItems = fn ($query) => $query->whereHas(
+            'order',
+            fn ($order) => $order->where('status', self::SOLD_STATUS)
+        );
+
+        $bestSellers = products::query()
+            ->whereHas('orderItems', $completedOrderItems)
+            ->with(['variants'])
+            ->withAvg('reviews', 'star')
+            ->withSum(['orderItems as sold_quantity' => $completedOrderItems], 'quantity')
+            ->orderByDesc('sold_quantity')
+            ->orderByDesc('product_id')
+            ->limit(15)
+            ->get()
+            ->map(fn (products $product) => [
+                'name' => $product->name,
+                'price' => (float) $product->price,
+                'image' => $this->imageUrl($product->image),
+                'href' => route('shop.product', [
+                    'category' => $this->categorySlug($product->product_type),
+                    'product_id' => $product->product_id,
+                ]),
+            ]);
+
+        $favoriteIds = auth()->check()
+            ? DB::table('favorites')->where('customer_id', auth()->id())->pluck('product_id')->all()
+            : [];
+
+        return view('home', compact('bestSellers', 'favoriteIds'));
+    }
 
     /**
      * ตั้งค่าตัวกรองสเปคของแต่ละหมวด
@@ -24,37 +57,37 @@ class ProductController extends Controller
     protected $typeConfigs = [
         'RACKET' => [
             'relation' => 'badmintonRacket',
-            'with'     => ['badmintonRacket'],
-            'fields'   => [
+            'with' => ['badmintonRacket'],
+            'fields' => [
                 'balance_point' => 'balance_point',
-                'shaft'         => 'shaft',
-                'flexibility'   => 'flexibility',
-                'weight'        => 'weight',
-                'grip_size'     => 'grip_size',
+                'shaft' => 'shaft',
+                'flexibility' => 'flexibility',
+                'weight' => 'weight',
+                'grip_size' => 'grip_size',
             ],
         ],
         'STRING' => [
             'relation' => 'badmintonString',
-            'with'     => ['badmintonString'],
-            'fields'   => [
-                'thickness'             => 'thickness',
+            'with' => ['badmintonString'],
+            'fields' => [
+                'thickness' => 'thickness',
                 'string_characteristic' => 'string_characteristic',
             ],
-            'multi'    => ['string_characteristic'],
+            'multi' => ['string_characteristic'],
         ],
         'SHUTTLECOCK' => [
             'relation' => 'shuttlecock',
-            'with'     => ['shuttlecock'],
-            'fields'   => [
-                'type'         => 'shuttle_type',   // ไม่ชนกับ ?type= ของหมวดสินค้า
+            'with' => ['shuttlecock'],
+            'fields' => [
+                'type' => 'shuttle_type',   // ไม่ชนกับ ?type= ของหมวดสินค้า
                 'speed_rating' => 'speed_rating',
             ],
         ],
         'GRIP' => [
             'relation' => 'grip',
-            'with'     => ['grip'],
-            'fields'   => [
-                'type'     => 'grip_type',
+            'with' => ['grip'],
+            'fields' => [
+                'type' => 'grip_type',
                 'material' => 'material',
             ],
         ],
@@ -62,100 +95,135 @@ class ProductController extends Controller
 
     public function index(Request $request, ?string $category = null)
     {
-        $categoryTypes = [
+        $routeTypes = [
             'badminton-racket' => 'RACKET',
             'badminton-string' => 'STRING',
             'grip' => 'GRIP',
             'shuttlecock' => 'SHUTTLECOCK',
         ];
-        $category = isset($categoryTypes[$category]) ? $category : 'badminton-racket';
-        $type = $categoryTypes[$category];
-        $config = $this->typeConfigs[$type];
+        $type = $routeTypes[$category] ?? $request->query('type');
+        $selectedType = is_string($type) && $type !== '' ? strtoupper($type) : null;
+        if ($selectedType && ! isset($this->typeConfigs[$selectedType])) {
+            $selectedType = null;   // หมวดที่ไม่รู้จัก = แสดงทุกหมวด
+        }
 
-        $rows = products::query()
-            ->where('product_type', $type)
-            ->with(array_merge($config['with'], ['variants']))
-            ->withAvg('reviews', 'star')
-            ->withSum(['orderItems as sales_count' => function ($query) {
-                $query->whereHas('order', fn ($order) => $order->where('status', self::SOLD_STATUS));
-            }], 'quantity')
-            ->orderByDesc('created_at')
+        $query = products::query();
+
+        // ----------------------------------------------------
+        // A. ตัวกรองทั่วไป (ใช้ได้กับทุกหมวด)
+        // ----------------------------------------------------
+        if (is_numeric($request->query('min_price'))) {
+            $query->where('price', '>=', $request->query('min_price'));
+        }
+        if (is_numeric($request->query('max_price'))) {
+            $query->where('price', '<=', $request->query('max_price'));
+        }
+
+        $brands = $this->values($request, 'brand');
+        if ($brands) {
+            $query->whereIn('brand', $brands);
+        }
+
+        $colors = $this->values($request, 'color');
+        if ($colors) {
+            $query->whereHas('variants', fn ($q) => $this->whereColorIn($q, $colors));
+        }
+
+        // ----------------------------------------------------
+        // B. ตัวกรองสเปคของตารางย่อยตามหมวด
+        // ----------------------------------------------------
+        if ($selectedType) {
+            $config = $this->typeConfigs[$selectedType];
+
+            $query->where('product_type', $selectedType);
+            $query->with($config['with']);
+
+            $query->whereHas($config['relation'], function ($q) use ($request, $config) {
+                $multi = $config['multi'] ?? [];
+
+                foreach ($config['fields'] as $column => $param) {
+                    $values = $this->values($request, $param);
+
+                    if ($values === []) {
+                        continue;
+                    }
+
+                    if (in_array($column, $multi, true)) {
+                        // คอลัมน์หลายค่า: เลือกหลายตัวเลือก = มีลักษณะใดลักษณะหนึ่ง (OR)
+                        $q->where(function ($w) use ($column, $values) {
+                            foreach ($values as $value) {
+                                $w->orWhereRaw(
+                                    "CONCAT('; ', `{$column}`, ';') LIKE ?",
+                                    ['%; '.$this->escapeLike($value).';%']
+                                );
+                            }
+                        });
+                    } else {
+                        $q->whereIn($column, $values);
+                    }
+                }
+            });
+        } else {
+            $query->with(array_merge(...array_column($this->typeConfigs, 'with')));
+        }
+
+        // variants โหลดครั้งเดียวทุกกรณี และแสดงเฉพาะสีที่กรองเมื่อมีการเลือกสี
+        $query->with(['variants' => function ($q) use ($colors) {
+            if ($colors) {
+                $this->whereColorIn($q, $colors);
+            }
+        }]);
+
+        // ดาวเฉลี่ยของแต่ละสินค้า → $product->reviews_avg_star
+        $query->withAvg('reviews', 'star');
+
+        // ----------------------------------------------------
+        // C. เรียงลำดับ
+        // ----------------------------------------------------
+        $query->withSum(['orderItems as sold_quantity' => function ($q) {
+            $q->whereHas('order', fn ($o) => $o->where('status', self::SOLD_STATUS));
+        }], 'quantity');
+
+        switch ($request->query('sort', 'latest')) {
+            case 'price_low':
+                $query->orderBy('price', 'asc');
+                break;
+
+            case 'price_high':
+                $query->orderBy('price', 'desc');
+                break;
+
+            case 'top_sale':
+                // ยอดขายรวมจำนวนชิ้น นับเฉพาะคำสั่งซื้อที่เสร็จสมบูรณ์ (orders.status = 'Complete')
+                // สินค้าที่ยังไม่มียอดขายจะได้ NULL และอยู่ท้ายสุดเมื่อเรียงมากไปน้อย
+                $query->orderByDesc('sold_quantity');
+                break;
+
+            case 'latest':
+            default:
+                break;
+        }
+
+        // ลำดับรองเสมอ เพื่อให้แบ่งหน้าเสถียร
+        $products = $query->orderByDesc('created_at')
             ->orderByDesc('product_id')
-            ->get();
+            ->paginate(1000)
+            ->withQueryString();
 
-        $productItems = $rows->map(fn (products $product) => $this->toListItem($product, $type))->values();
-        $brands = $productItems->pluck('brand')->filter()->unique()->sort()->values()->all();
-        $prices = $productItems->pluck('price')->filter();
-        $price_range = [
-            'min' => $prices->isNotEmpty() ? (float) floor($prices->min()) : 0,
-            'max' => $prices->isNotEmpty() ? (float) ceil($prices->max()) : 0,
-        ];
-        $price_gap = min(50.0, max(0.0, $price_range['max'] - $price_range['min']));
-        $filter_groups = [$type => $this->buildFilterGroups($type, $rows)];
+        // Showing {{ $products->total() }} result from total {{ $totalInCategory }}
+        $totalInCategory = products::query()
+            ->when($selectedType, fn ($q) => $q->where('product_type', $selectedType))
+            ->count();
 
-        // หน้า shop.index ใช้ข้อมูลเป็น array เพื่อให้ Alpine กรอง/เรียงผลลัพธ์ในหน้านี้
-        return view('shop.index', [
-            'products' => $productItems,
-            'brands' => $brands,
-            'filter_groups' => $filter_groups,
-            'price_range' => $price_range,
-            'price_gap' => $price_gap,
-        ]);
-    }
+        $facets = $selectedType ? $this->buildFacets($selectedType) : [];
+        $commonFacets = $this->buildCommonFacets($selectedType);
 
-    public function show(string $category, int $product_id)
-    {
-        $product = products::query()
-            ->where('product_id', $product_id)
-            ->with(['variants', 'reviews.customer'])
-            ->withAvg('reviews', 'star')
-            ->first();
+        // สินค้าที่ผู้ใช้ที่ล็อกอินกดหัวใจไว้ (ผู้เยี่ยมชม = ว่าง)
+        $favoriteIds = auth()->check()
+            ? DB::table('favorites')->where('customer_id', auth()->id())->pluck('product_id')->all()
+            : [];
 
-        if (! $product) {
-            return view('shop.product', [
-                'product' => null,
-                'reviews' => collect(),
-                'max_tension' => null,
-            ]);
-        }
-
-        $type = $product->product_type;
-        if (isset($this->typeConfigs[$type])) {
-            $product->load($this->typeConfigs[$type]['with']);
-        }
-
-        $reviews = $product->reviews
-            ->sortByDesc(fn ($review) => [(string) $review->date, $review->no ?? 0])
-            ->values()
-            ->map(fn ($review) => [
-                'star' => (int) $review->star,
-                'date' => $review->date instanceof \Carbon\Carbon
-                    ? $review->date->format('Y-m-d')
-                    : (string) $review->date,
-                'comment' => $review->comment,
-                'customer' => [
-                    'name' => data_get($review, 'customer.name')
-                        ?? data_get($review, 'customer.email')
-                        ?? 'Customer',
-                ],
-            ]);
-
-        $max_tension = $type === 'RACKET'
-            ? (int) ($product->badmintonRacket->max_tension ?? 0)
-            : null;
-        $max_tension = $max_tension >= 18 ? $max_tension : null;
-
-        return view('shop.product', [
-            'product' => $this->toDetailItem($product),
-            'reviews' => $reviews,
-            'max_tension' => $max_tension,
-        ]);
-    }
-
-    private function toListItem(products $product, string $type): array
-    {
-        $subtype = $this->subtypeOf($product, $type);
-        $item = [
+        $items = $products->getCollection()->map(fn (products $product) => [
             'product_id' => $product->product_id,
             'name' => $product->name,
             'brand' => $product->brand,
@@ -164,26 +232,86 @@ class ProductController extends Controller
             'detail' => $product->detail,
             'product_type' => $product->product_type,
             'rating' => $product->reviews_avg_star !== null ? round((float) $product->reviews_avg_star, 1) : null,
-            'sales_count' => (int) ($product->sales_count ?? 0),
+            'sales_count' => (int) ($product->sold_quantity ?? 0),
             'product_variants' => $product->variants->map(fn ($variant) => [
                 'product_id' => $variant->product_id,
                 'color' => $variant->color,
                 'stock' => $variant->stock,
             ])->values()->all(),
-        ];
+        ])->values();
 
-        foreach ($this->typeConfigs[$type]['fields'] as $column => $key) {
-            $item[$key] = $subtype?->{$column};
+        $brands = $commonFacets['brands']->keys()->all();
+        $filterGroups = [];
+        if ($selectedType) {
+            $colorOptions = $products->getCollection()
+                ->flatMap(fn (products $product) => $product->variants)
+                ->flatMap(fn ($variant) => array_map('trim', explode('/', (string) $variant->color)))
+                ->filter()
+                ->unique()
+                ->sort()
+                ->values();
+
+            if ($colorOptions->isNotEmpty()) {
+                $filterGroups[] = [
+                    'key' => 'color',
+                    'label' => 'Color',
+                    'type' => 'color',
+                    'options' => $colorOptions->mapWithKeys(fn ($value) => [$value => $value])->all(),
+                    'open' => true,
+                ];
+            }
+
+            foreach ($this->typeConfigs[$selectedType]['fields'] as $column => $key) {
+                $options = collect($facets[$key] ?? [])->keys()->values();
+                if ($options->isNotEmpty()) {
+                    $filterGroups[] = [
+                        'key' => $key,
+                        'label' => $this->filterLabel($key),
+                        'type' => 'checkbox',
+                        'options' => $options->mapWithKeys(fn ($value) => [$value => $value])->all(),
+                        'open' => true,
+                    ];
+                }
+            }
         }
 
-        return $item;
+        $priceQuery = products::query()->when($selectedType, fn ($q) => $q->where('product_type', $selectedType));
+        $priceRange = [
+            'min' => (float) ($priceQuery->min('price') ?? 0),
+            'max' => (float) ($priceQuery->max('price') ?? 0),
+        ];
+
+        return view('shop.index', [
+            'products' => $items,
+            'brands' => $brands,
+            'filter_groups' => $selectedType ? [$selectedType => $filterGroups] : [],
+            'price_range' => $priceRange,
+            'price_gap' => min(50.0, max(0.0, $priceRange['max'] - $priceRange['min'])),
+            'favorite_product_ids' => $favoriteIds,
+        ]);
     }
 
-    private function toDetailItem(products $product): array
+    public function show(string $category, int $product_id)
     {
-        $image = $this->imageUrl($product->image);
+        $product = products::query()->where('product_id', $product_id)->first();
+        if (! $product) {
+            return view('shop.product', [
+                'product' => null,
+                'reviews' => collect(),
+                'max_tension' => null,
+                'is_favorited' => false,
+            ]);
+        }
 
-        return [
+        $product->load('variants');
+        if (isset($this->typeConfigs[$product->product_type])) {
+            $product->load($this->typeConfigs[$product->product_type]['with']);
+        }
+        $product->loadAvg('reviews', 'star');
+
+        $rating = $product->reviews_avg_star !== null ? round((float) $product->reviews_avg_star, 1) : null;
+        $image = $this->imageUrl($product->image);
+        $detail = [
             'product_id' => $product->product_id,
             'name' => $product->name,
             'brand' => $product->brand,
@@ -192,78 +320,36 @@ class ProductController extends Controller
             'images' => $image ? [$image] : [],
             'detail' => $product->detail,
             'product_type' => $product->product_type,
-            'rating' => $product->reviews_avg_star !== null ? round((float) $product->reviews_avg_star, 1) : null,
+            'rating' => $rating,
             'product_variants' => $product->variants->map(fn ($variant) => [
                 'color' => $variant->color,
                 'stock' => $variant->stock,
             ])->values()->all(),
         ];
-    }
+        $reviews = $product->reviews()
+            ->with('customer')
+            ->orderByDesc('date')
+            ->orderByDesc('no')
+            ->get()
+            ->map(fn ($review) => [
+                'star' => (int) $review->star,
+                'date' => (string) $review->date,
+                'comment' => $review->comment,
+                'customer' => ['name' => $review->customer?->name ?? $review->customer?->email ?? 'Customer'],
+            ]);
+        $maxTension = $product->product_type === 'RACKET'
+            ? (int) ($product->badmintonRacket?->max_tension ?? 0)
+            : null;
+        $isFavorited = auth()->user()?->favorites()
+            ->where('products.product_id', $product->product_id)
+            ->exists() ?? false;
 
-    private function subtypeOf(products $product, string $type)
-    {
-        return $product->{$this->typeConfigs[$type]['relation']};
-    }
-
-    private function buildFilterGroups(string $type, $rows): array
-    {
-        $groups = [];
-        $colors = $rows->flatMap(fn (products $product) => $product->variants)
-            ->flatMap(fn ($variant) => array_map('trim', explode('/', (string) $variant->color)))
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
-
-        if ($colors->isNotEmpty()) {
-            $groups[] = [
-                'key' => 'color',
-                'label' => 'Color',
-                'type' => 'color',
-                'options' => $colors->mapWithKeys(fn ($color) => [$color => $color])->all(),
-                'open' => true,
-            ];
-        }
-
-        $labels = [
-            'balance_point' => 'Balance point',
-            'shaft' => 'Shaft',
-            'flexibility' => 'Flexibility',
-            'weight' => 'Weight',
-            'grip_size' => 'Grip size',
-            'thickness' => 'Thickness',
-            'string_characteristic' => 'Characteristic',
-            'type' => $type === 'GRIP' ? 'Type' : 'Type',
-            'shuttle_type' => 'Type',
-            'grip_type' => 'Type',
-            'speed_rating' => 'Speed',
-            'material' => 'Material',
-        ];
-
-        foreach ($this->typeConfigs[$type]['fields'] as $column => $key) {
-            $subtypeRelation = $this->typeConfigs[$type]['relation'];
-            $values = $rows->map(fn (products $product) => $product->{$subtypeRelation}?->{$column})
-                ->filter(fn ($value) => is_string($value) && trim($value) !== '')
-                ->flatMap(fn ($value) => in_array($column, $this->typeConfigs[$type]['multi'] ?? [], true)
-                    ? array_map('trim', explode(';', $value))
-                    : [$value])
-                ->filter()
-                ->unique()
-                ->sort()
-                ->values();
-
-            if ($values->isNotEmpty()) {
-                $groups[] = [
-                    'key' => $key,
-                    'label' => $labels[$key] ?? $key,
-                    'type' => 'checkbox',
-                    'options' => $values->mapWithKeys(fn ($value) => [$value => $value])->all(),
-                    'open' => true,
-                ];
-            }
-        }
-
-        return $groups;
+        return view('shop.product', [
+            'product' => $detail,
+            'reviews' => $reviews,
+            'max_tension' => $maxTension >= 18 ? $maxTension : null,
+            'is_favorited' => $isFavorited,
+        ]);
     }
 
     private function imageUrl(?string $path): ?string
@@ -277,6 +363,33 @@ class ProductController extends Controller
         }
 
         return asset($path);
+    }
+
+    private function categorySlug(string $type): string
+    {
+        return match ($type) {
+            'STRING' => 'badminton-string',
+            'GRIP' => 'grip',
+            'SHUTTLECOCK' => 'shuttlecock',
+            default => 'badminton-racket',
+        };
+    }
+
+    private function filterLabel(string $key): string
+    {
+        return match ($key) {
+            'balance_point' => 'Balance point',
+            'shaft' => 'Shaft',
+            'flexibility' => 'Flexibility',
+            'weight' => 'Weight',
+            'grip_size' => 'Grip size',
+            'thickness' => 'Thickness',
+            'string_characteristic' => 'Characteristic',
+            'speed_rating' => 'Speed',
+            'material' => 'Material',
+            'grip_type', 'shuttle_type' => 'Type',
+            default => $key,
+        };
     }
 
     // =====================================================================
@@ -307,7 +420,7 @@ class ProductController extends Controller
             foreach ($colors as $color) {
                 $w->orWhereRaw(
                     "CONCAT('/', `color`, '/') LIKE ?",
-                    ['%/' . $this->escapeLike($color) . '/%']
+                    ['%/'.$this->escapeLike($color).'/%']
                 );
             }
         });
@@ -325,8 +438,8 @@ class ProductController extends Controller
     private function buildFacets(string $type): array
     {
         $config = $this->typeConfigs[$type];
-        $table  = (new products)->{$config['relation']}()->getRelated()->getTable();
-        $multi  = $config['multi'] ?? [];
+        $table = (new products)->{$config['relation']}()->getRelated()->getTable();
+        $multi = $config['multi'] ?? [];
         $facets = [];
 
         foreach ($config['fields'] as $column => $param) {
@@ -335,6 +448,7 @@ class ProductController extends Controller
                     DB::table($table)->whereNotNull($column)->pluck($column),
                     ';'
                 );
+
                 continue;
             }
 
@@ -404,7 +518,7 @@ class ProductController extends Controller
 
             foreach ($tokens as $token) {
                 $key = mb_strtolower($token);
-                $seen[$key]['label'] ??= mb_strtoupper(mb_substr($token, 0, 1)) . mb_substr($token, 1);
+                $seen[$key]['label'] ??= mb_strtoupper(mb_substr($token, 0, 1)).mb_substr($token, 1);
                 $seen[$key]['n'] = ($seen[$key]['n'] ?? 0) + 1;
             }
         }
