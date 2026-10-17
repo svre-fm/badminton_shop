@@ -21,7 +21,9 @@ class ProductSeeder extends Seeder
             'shaft' => 'Carbon Fiber',
             'flexibility' => 'Stiff',
             'grip_size' => 'G4',
-            'colors' => ['Black/Orange'],
+            'colors' => [
+                'Black/Orange'  => 'imgs/Rackets/Kawasaki/KAWASAKI-Dragon-Swallow-77-NAVY-BlackOrange-4U-83g-30lbs.png'
+            ],
         ],
         [
             'brand' => 'Kawasaki',
@@ -35,7 +37,10 @@ class ProductSeeder extends Seeder
             'shaft' => 'Carbon Fiber',
             'flexibility' => 'Stiff',
             'grip_size' => 'G4',
-            'colors' => ['Blue/Black'],
+            'colors' => [
+                'Blue/Black' => 'imgs/Rackets/Kawasaki/KAWASAKI-Dragon-Swallow-77-NAVY-BlueBlack-4U-83g-30lbs.png'
+            ],
+            
         ],
         [
             'brand' => 'Kawasaki',
@@ -49,7 +54,9 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Medium',
             'grip_size' => 'G6',
-            'colors' => ['Lime'],
+            'colors' => [
+                'Lime' => 'imgs/Rackets/Kawasaki/KAWASAKI-Passion-P21-Lime-4U-83g-28lbs.png'
+            ],
         ],
         [
             'brand' => 'Kawasaki',
@@ -63,7 +70,9 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Medium',
             'grip_size' => 'G5',
-            'colors' => ['White/Orange'],
+            'colors' => [
+                'White/Orange' => 'imgs/Rackets/Kawasaki/KAWASAKI-Passion-P21-WhiteOrange-4U-83g-28lbs.png'
+            ],
         ],
         [
             'brand' => 'Kawasaki',
@@ -77,7 +86,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Full Carbon',
             'flexibility' => 'Soft',
             'grip_size' => 'G4',
-            'colors' => ['Blue'],
+            'colors' => ['Blue' => 'imgs/Rackets/Kawasaki/KAWASAKI-Victory-Blue-3U-94g-26lbs.png'],
         ],
         [
             'brand' => 'Kawasaki',
@@ -91,7 +100,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Full Carbon',
             'flexibility' => 'Soft',
             'grip_size' => 'G6',
-            'colors' => ['Red'],
+            'colors' => ['Red' => 'imgs/Rackets/Kawasaki/KAWASAKI-Victory-Red-3U-94g-26lbs.png'],
         ],
         [
             'brand' => 'Victor',
@@ -105,7 +114,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Carbon Fiber',
             'flexibility' => 'Stiff',
             'grip_size' => 'G5',
-            'colors' => ['Red/Black'],
+            'colors' => ['Red/Black' => 'imgs/Rackets/Victor/VICTOR-ARC-SABER-11-Pro-RedBlack-5U-78g-28lbs.png'],
         ],
         [
             'brand' => 'Victor',
@@ -119,7 +128,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Full Carbon',
             'flexibility' => 'Extra Stiff',
             'grip_size' => 'G4',
-            'colors' => ['Black'],
+            'colors' => ['Black' => 'imgs/Rackets/Victor/VICTOR-ARS-100X-ULTRA-Black-4U-83g-30lbs.png'],
         ],
         [
             'brand' => 'Victor',
@@ -133,7 +142,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Medium',
             'grip_size' => 'G6',
-            'colors' => ['White/Blue'],
+            'colors' => ['White/Blue' => 'imgs/Rackets/Victor/VICTOR-BRS-12-PRO-WhiteBlue-4U-83g-28lbs.png'],
         ],
         [
             'brand' => 'Victor',
@@ -147,7 +156,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Carbon Fiber',
             'flexibility' => 'Soft',
             'grip_size' => 'G6',
-            'colors' => ['Light Blue'],
+            'colors' => ['Light Blue' => 'imgs/Rackets/Victor/VICTOR-TK-ALPHA-M-LightBlue-4U-83g-30lbs.png'],
         ],
         [
             'brand' => 'Victor',
@@ -161,7 +170,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Stiff',
             'grip_size' => 'G5',
-            'colors' => ['White/Blue'],
+            'colors' => ['White/Blue' => 'imgs/Rackets/Victor/VICTOR-TK-BOOMBA-WhiteBlue-4U-83g-30lbs.png'],
         ],
         [
             'brand' => 'Victor',
@@ -175,7 +184,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Full Carbon',
             'flexibility' => 'Extra Stiff',
             'grip_size' => 'G4',
-            'colors' => ['Black'],
+            'colors' => ['Black' => 'imgs/Rackets/Victor/VICTOR-TK-RYUGA-II-PRO-Black-4U-83g-30lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -189,7 +198,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Carbon Fiber',
             'flexibility' => 'Medium',
             'grip_size' => 'G5',
-            'colors' => ['Orange'],
+            'colors' => ['Orange' => 'imgs/Rackets/Yonex/YONEX-ASTROX-01-ABILITY-Orange-4U-83g-28lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -203,7 +212,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Stiff',
             'grip_size' => 'G5',
-            'colors' => ['Yellow/Black'],
+            'colors' => ['Yellow/Black' => 'imgs/Rackets/Yonex/YONEX-ASTROX-77-PRO-YellowBlack-4U-83g-27lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -217,7 +226,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Full Carbon',
             'flexibility' => 'Extra Stiff',
             'grip_size' => 'G5',
-            'colors' => ['Black/Cherry'],
+            'colors' => ['Black/Cherry' => 'imgs/Rackets/Yonex/YONEX-ASTROX-100ZZ-BlackCherry-4U-28lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -231,7 +240,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Medium',
             'grip_size' => 'G4',
-            'colors' => ['Light Blue'],
+            'colors' => ['Light Blue' => 'imgs/Rackets/Yonex/YONEX-NANOFLARE-001-CLEAR-LightBlue-5U-78g-27lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -245,7 +254,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Medium',
             'grip_size' => 'G6',
-            'colors' => ['Red/Black'],
+            'colors' => ['Red/Black' => 'imgs/Rackets/Yonex/YONEX-NANOFLARE-001-CLEAR-RedBlack-5U-78g-27lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -259,7 +268,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Graphite',
             'flexibility' => 'Medium',
             'grip_size' => 'G5',
-            'colors' => ['White/Aqua'],
+            'colors' => ['White/Aqua' => 'imgs/Rackets/Yonex/YONEX-NANOFLARE-001-CLEAR-WhiteAqua-5U-78g-27lbs.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -273,7 +282,7 @@ class ProductSeeder extends Seeder
             'shaft' => 'Carbon Fiber',
             'flexibility' => 'Stiff',
             'grip_size' => 'G4',
-            'colors' => ['Black/Yellow'],
+            'colors' => ['Black/Yellow' => 'imgs/Rackets/Yonex/YONEX-NANOFLARE-1000-Play-BlackYellow-4U-83g-28lbs.png'],
         ],
         [
             'brand' => 'Kuikma',
@@ -283,7 +292,10 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/Decathlon-TowelGrip-White.png',
             'detail' => 'กริปผ้า Kuikma ซับเหงื่อได้ดี ช่วยให้จับด้ามได้กระชับระหว่างเล่น บรรจุ 2 ชิ้น เหมาะกับผู้เล่นที่ต้องการเปลี่ยนกริปเป็นประจำ',
             'spec' => ['type' => 'Towel grip', 'material' => 'Cotton towel'],
-            'colors' => ['White', 'Yellow'],
+            'colors' => [
+                'White' => 'imgs/Grip/Decathlon-TowelGrip-White.png', 
+                'Yellow' => 'imgs/Grip/Decathlon-TowelGrip-Yellow.png'
+            ],
         ],
         [
             'brand' => 'SSPORT',
@@ -293,7 +305,11 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/SSPORT-02BK.png',
             'detail' => 'กริปพันด้าม SSPORT รุ่น 02 ช่วยเพิ่มชั้นสัมผัสระหว่างมือกับด้ามไม้ มีสีให้เลือกตามภาพ เหมาะกับผู้เล่นที่ต้องการเปลี่ยนสีหรือพันกริปใหม่',
             'spec' => ['type' => 'Overgrip', 'material' => 'Synthetic'],
-            'colors' => ['Black', 'Blue', 'Orange'],
+            'colors' => [
+                'Black' => 'imgs/Grip/SSPORT-02BK.png', 
+                'Blue' => 'imgs/Grip/SSPORT-Blue.png', 
+                'Orange' => 'imgs/Grip/SSPORT-Orange.png'
+            ],
         ],
         [
             'brand' => 'Victor',
@@ -303,7 +319,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/VICTOR-GR253-Red.png',
             'detail' => 'กริปพันด้าม Victor GR253 สีแดง ช่วยปรับสัมผัสของด้ามและเพิ่มความมั่นใจในการจับ เหมาะกับผู้เล่นที่ต้องการเปลี่ยนกริปเดิมให้มีสีสัน',
             'spec' => ['type' => 'Overgrip', 'material' => 'Synthetic'],
-            'colors' => ['Red'],
+            'colors' => ['Red' => 'imgs/Grip/VICTOR-GR253-Red.png'],
         ],
         [
             'brand' => 'Victor',
@@ -313,7 +329,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/VICTOR-GR262-Yellow.png',
             'detail' => 'กริปพันด้าม Victor GR262 สีเหลือง ช่วยปรับสัมผัสของด้ามและเพิ่มความมั่นใจในการจับ เหมาะกับผู้เล่นที่ต้องการเปลี่ยนกริปเดิมให้มีสีสัน',
             'spec' => ['type' => 'Overgrip', 'material' => 'Synthetic'],
-            'colors' => ['Yellow'],
+            'colors' => ['Yellow' => 'imgs/Grip/VICTOR-GR262-Yellow.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -323,7 +339,15 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/YONEX-AC102EX-Black.png',
             'detail' => 'Yonex Wet Super Grap AC102EX เป็นกริปชนิด wet ตามข้อมูลบนบรรจุภัณฑ์ ให้สัมผัสหนึบสำหรับการจับด้าม เหมาะกับผู้เล่นที่ชอบกริปสัมผัสชุ่มมือ',
             'spec' => ['type' => 'Wet overgrip', 'material' => 'Synthetic'],
-            'colors' => ['Black', 'Green', 'Orange', 'Pink', 'Red', 'White', 'Yellow'],
+            'colors' => [
+                'Black' => 'imgs/Grip/YONEX-AC102EX-Black.png', 
+                'Green' => 'imgs/Grip/YONEX-AC102EX-Green.png', 
+                'Orange' => 'imgs/Grip/YONEX-AC102EX-Orange.png', 
+                'Pink' => 'imgs/Grip/YONEX-AC102EX-Pink.png', 
+                'Red' => 'imgs/Grip/YONEX-AC102EX-Red.png', 
+                'White' => 'imgs/Grip/YONEX-AC102EX-White.png', 
+                'Yellow' => 'imgs/Grip/YONEX-AC102EX-Yellow.png'
+            ],
         ],
         [
             'brand' => 'Yonex',
@@ -333,7 +357,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/YONEX-AC108EX.png',
             'detail' => 'Yonex AC108EX Super Grap Pure เป็นกริปพันด้ามสังเคราะห์สีดำ ช่วยเพิ่มชั้นสัมผัสบนด้ามไม้ เหมาะกับผู้เล่นที่ต้องการกริปเปลี่ยนสำหรับใช้งานทั่วไป',
             'spec' => ['type' => 'Overgrip', 'material' => 'Synthetic'],
-            'colors' => ['Black'],
+            'colors' => ['Black' => 'imgs/Grip/YONEX-AC108EX.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -343,7 +367,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/YONEX-AC135EX.png',
             'detail' => 'Yonex AC135EX Strong Grap เป็นกริปสังเคราะห์สำหรับพันด้ามมาตรฐาน ภาพแสดงบรรจุภัณฑ์ 3 ชิ้น เหมาะกับผู้เล่นที่ต้องการเตรียมกริปสำรองไว้เปลี่ยน',
             'spec' => ['type' => 'Replacement grip', 'material' => 'Synthetic'],
-            'colors' => ['Black'],
+            'colors' => ['Black' => 'imgs/Grip/YONEX-AC135EX.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -353,7 +377,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/Grip/YONEX-Dry-Super-Grap.png',
             'detail' => 'Yonex Dry Super Grap เป็นกริปชนิด dry ที่ระบุคุณสมบัติการซับเหงื่อบนบรรจุภัณฑ์ ช่วยให้จับด้ามได้เหมาะกับการเล่นที่มีเหงื่อ เหมาะกับผู้เล่นที่ชอบสัมผัสแบบแห้ง',
             'spec' => ['type' => 'Dry overgrip', 'material' => 'Synthetic'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/Grip/YONEX-Dry-Super-Grap.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -363,7 +387,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-Aerosonic-61-White.png',
             'detail' => 'เอ็น Yonex Aerosonic ขนาด 0.61 มม. ระบุ Repulsion Power และ Medium Feeling บนซอง พร้อมโครงสร้าง Multifilament เหมาะกับผู้เล่นที่มองหาเอ็นเส้นเล็กและสัมผัสการตีระดับกลาง',
             'spec' => ['thickness' => '0.61 mm', 'string_characteristic' => 'Repulsion power; medium feeling; multifilament'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-Aerosonic-61-White.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -373,7 +397,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-BG-65-Titanium-White.png',
             'detail' => 'เอ็น Yonex BG 65 Titanium ขนาด 0.70 มม. ระบุ Durability และ Hard Feeling บนซอง พร้อมโครงสร้าง Multifilament เหมาะกับผู้เล่นที่ต้องการเอ็นสำหรับใช้งานต่อเนื่อง',
             'spec' => ['thickness' => '0.70 mm', 'string_characteristic' => 'Durability; hard feeling; multifilament'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-BG-65-Titanium-White.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -383,7 +407,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-BG-66-Force-White.png',
             'detail' => 'เอ็น Yonex BG 66 Force ขนาด 0.65 มม. ระบุ Repulsion Power และ Medium Feeling บนซอง พร้อมโครงสร้าง Multifilament เหมาะกับผู้เล่นที่ชอบสัมผัสเอ็นระดับกลาง',
             'spec' => ['thickness' => '0.65 mm', 'string_characteristic' => 'Repulsion power; medium feeling; multifilament'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-BG-66-Force-White.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -393,7 +417,11 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-BG-66-Ultimax-Blue.png',
             'detail' => 'เอ็น Yonex BG 66 Ultimax ขนาด 0.65 มม. ระบุ Quick Repulsion บนบรรจุภัณฑ์ และบางสีแสดง Repulsion Power, Medium Feeling และ Multifilament เพิ่มเติม เหมาะกับผู้เล่นที่มองหาเอ็นสำหรับเกมตอบโต้คล่องตัว',
             'spec' => ['thickness' => '0.65 mm', 'string_characteristic' => 'Quick repulsion; repulsion power; medium feeling'],
-            'colors' => ['Blue', 'Green', 'Yellow'],
+            'colors' => [
+                'Blue' => 'imgs/String/YONEX-BG-66-Ultimax-Blue.png', 
+                'Green' => 'imgs/String/YONEX-BG-66-Ultimax-Green.png', 
+                'Yellow' => 'imgs/String/YONEX-BG-66-Ultimax-Yellow.png'
+            ],
         ],
         [
             'brand' => 'Yonex',
@@ -403,7 +431,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-BG-80-Power-White.png',
             'detail' => 'เอ็น Yonex BG 80 Power ระบุ Repulsion Power, Quick Repulsion และ Powerful Smash บนซอง เหมาะกับผู้เล่นที่มองหาเอ็นสำหรับจังหวะบุกและการตีตบ',
             'spec' => ['thickness' => '0.68 mm', 'string_characteristic' => 'Repulsion power; quick repulsion; powerful smash'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-BG-80-Power-White.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -413,7 +441,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-BG-80-White.png',
             'detail' => 'เอ็น Yonex BG 80 ขนาด 0.68 มม. ระบุ Repulsion Power และ Hard Feeling บนซอง พร้อมโครงสร้าง Multifilament เหมาะกับผู้เล่นที่ชอบสัมผัสเอ็นแน่น',
             'spec' => ['thickness' => '0.68 mm', 'string_characteristic' => 'Repulsion power; hard feeling; multifilament'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-BG-80-White.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -423,7 +451,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-Exbolt-65-White.png',
             'detail' => 'เอ็น Yonex Exbolt 65 ขนาด 0.65 มม. ระบุ Quick Repulsion และแสดงหัวข้อ Durability, Hitting Sound, Shock Absorption และ Control บนซอง เหมาะกับผู้เล่นที่ต้องการเอ็นสำหรับเกมคล่องตัว',
             'spec' => ['thickness' => '0.65 mm', 'string_characteristic' => 'Quick repulsion; durability; hitting sound; shock absorption; control'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-Exbolt-65-White.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -433,7 +461,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-Nanogy-98-Lime.png',
             'detail' => 'เอ็น Yonex Nanogy 98 ขนาด 0.66 มม. ระบุ Repulsion Power และ Medium Feeling พร้อมเทคโนโลยี Nanoscience บนซอง เหมาะกับผู้เล่นที่ต้องการสัมผัสเอ็นระดับกลาง',
             'spec' => ['thickness' => '0.66 mm', 'string_characteristic' => 'Repulsion power; medium feeling; Nanosci CS carbon nanotube'],
-            'colors' => ['Lime'],
+            'colors' => ['Lime' => 'imgs/String/YONEX-Nanogy-98-Lime.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -443,7 +471,7 @@ class ProductSeeder extends Seeder
             'image' => 'imgs/String/YONEX-Skyarc-White.png',
             'detail' => 'เอ็น Yonex Skyarc ขนาด 0.69 มม. ระบุ Control และการเร่งลูกเคลียร์จากท้ายคอร์ตบนซอง พร้อมแสดงหัวข้อ Repulsion, Durability, Hitting Sound และ Shock Absorption เหมาะกับผู้เล่นที่เน้นควบคุมลูก',
             'spec' => ['thickness' => '0.69 mm', 'string_characteristic' => 'Control; quick repulsion; durability; hitting sound; shock absorption'],
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/String/YONEX-Skyarc-White.png'],
         ],
         [
             'brand' => 'Kawasaki',
@@ -454,7 +482,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตัน Kawasaki B1 สำหรับการฝึกซ้อมและเล่นทั่วไป รูปแบบขนไก่ช่วยให้เห็นทิศทางลูกได้ชัด เหมาะกับผู้เล่นที่ต้องการลูกสำหรับเล่นในสนามในร่ม',
             'material' => 'Feather',
             'speed' => '77',
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/ShuttleCock/KAWASAKI-B1-76.png'],
         ],
         [
             'brand' => 'Vension',
@@ -465,7 +493,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตัน Vension Bullet สำหรับการฝึกซ้อมและเล่นทั่วไป รูปแบบขนไก่เหมาะกับการเล่นในสนามในร่ม เหมาะกับผู้เล่นที่ต้องการลูกสำหรับเกมประจำวัน',
             'material' => 'Feather',
             'speed' => '75',
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/ShuttleCock/VENSION-Bullet-76.png'],
         ],
         [
             'brand' => 'Victor',
@@ -476,7 +504,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตันไนลอน Victor NS-3000 สีเหลืองตามภาพ ดูแลรักษาง่ายสำหรับการฝึกซ้อม เหมาะกับผู้เล่นที่ต้องการลูกไนลอนสำหรับเล่นในสนามในร่ม',
             'material' => 'Nylon',
             'speed' => '78',
-            'colors' => ['Yellow'],
+            'colors' => ['Yellow' => 'imgs/ShuttleCock/VICTOR-NS-3000.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -487,7 +515,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตัน Yonex Aeroclear สำหรับการเล่นในสนามในร่ม รูปแบบขนไก่ช่วยให้มองเห็นแนวทางลูกขณะเล่น เหมาะกับการฝึกซ้อมและเล่นทั่วไป',
             'material' => 'Feather',
             'speed' => '76',
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/ShuttleCock/YONEX-Aeroclear.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -498,7 +526,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตันขนไก่ Yonex Aerosensa 350 สำหรับการเล่นในสนามในร่ม เหมาะกับผู้เล่นที่ต้องการลูกขนไก่สำหรับการฝึกซ้อมหรือเล่นเป็นประจำ',
             'material' => 'Feather',
             'speed' => '77',
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/ShuttleCock/YONEX-Aerosensa-350.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -509,7 +537,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตันขนไก่ Yonex League สำหรับการเล่นในสนามในร่ม เหมาะกับผู้เล่นที่ต้องการลูกสำหรับซ้อมและเล่นทั่วไป เลือกความเร็วให้เหมาะกับอุณหภูมิและสภาพสนาม',
             'material' => 'Feather',
             'speed' => '75',
-            'colors' => ['White'],
+            'colors' => ['White' => 'imgs/ShuttleCock/YONEX-League.png'],
         ],
         [
             'brand' => 'Yonex',
@@ -520,7 +548,7 @@ class ProductSeeder extends Seeder
             'detail' => 'ลูกแบดมินตันไนลอน Yonex MAVIS 350 สีเหลืองตามภาพ ใช้งานสะดวกสำหรับการฝึกซ้อมและเล่นทั่วไป เหมาะกับผู้เล่นที่มองหาลูกไนลอนสำหรับสนามในร่ม',
             'material' => 'Nylon',
             'speed' => '78',
-            'colors' => ['Yellow'],
+            'colors' => ['Yellow' => 'imgs/ShuttleCock/YONEX-MAVIS-350.png'],
         ],
     ];
 
@@ -567,10 +595,14 @@ class ProductSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
-        foreach ($definition['colors'] as $color) {
+        foreach ($definition['colors'] as $key => $value) {
+            $color = is_int($key) ? $value : $key;
+            $variantImage = is_int($key) ? null : $value;
+
             DB::table('productvariants')->insert([
                 'product_id' => $productId,
                 'color' => $color,
+                'image' => $variantImage,
                 'stock' => 20,
             ]);
         }

@@ -321,10 +321,16 @@ class ProductController extends Controller
             'detail' => $product->detail,
             'product_type' => $product->product_type,
             'rating' => $rating,
-            'product_variants' => $product->variants->map(fn ($variant) => [
-                'color' => $variant->color,
-                'stock' => $variant->stock,
-            ])->values()->all(),
+            'product_variants' => $product->variants->map(function ($variant) {
+                $variantImage = $this->imageUrl($variant->image ?? null);
+
+                return [
+                    'color'  => $variant->color,
+                    'stock'  => $variant->stock,
+                    'image'  => $variantImage,
+                    'images' => $variantImage ? [$variantImage] : [],
+                ];
+            })->values()->all(),
         ];
         $reviews = $product->reviews()
             ->with('customer')

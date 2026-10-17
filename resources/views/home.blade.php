@@ -79,9 +79,9 @@
         </div>
 
             <div x-ref="track" @scroll.passive="update()"
-                 class="mt-5 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-3 sm:gap-7 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+     class="-mx-1 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3 pt-1 sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-px-1">
                 @foreach ($bestSellers as $p)
-                    <div class="w-44 shrink-0 snap-start sm:w-56 lg:w-64">
+                    <div class="w-36 shrink-0 snap-start sm:w-44 lg:w-52">
                         <x-shop.product-card :name="$p['name']" :price="$p['price']" :image="$p['image']" :href="$p['href']" />
                     </div>
                 @endforeach

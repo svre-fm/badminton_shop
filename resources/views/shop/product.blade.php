@@ -18,91 +18,181 @@
 
 <x-layouts.shop :title="data_get($product, 'name', 'Product')" active="shop">
     @if ($product)
-    <div class="mt-8 grid gap-8 md:grid-cols-[6rem_1fr_1fr]">
-        {{-- Thumbs --}}
-        <div class="order-2 flex gap-3 md:order-1 md:flex-col">
-            @foreach (data_get($product, 'images', []) as $image)
-                <button type="button" class="aspect-square w-20 overflow-hidden rounded-lg bg-tile md:w-full" aria-label="Product image">
-                    <img src="{{ $image }}" alt="" class="size-full object-cover">
-                </button>
-            @endforeach
-        </div>
-        <div class="order-1 aspect-square overflow-hidden rounded-xl bg-tile md:order-2">
-            @if (data_get($product, 'image'))
-                <img src="{{ data_get($product, 'image') }}" alt="{{ data_get($product, 'name') }}" class="size-full object-cover">
-            @endif
-        </div>
+    <div class="mt-8 grid gap-8 md:grid-cols-[6rem_1fr_1fr]" 
+        x-data="{
+                    tension: '',
+                    minimumTension: @js($minimum_tension),
+                    maxTension: @js($max_tension),
+                    tensionError: '',
+                    requiresTension: @js($requires_tension),
+                    isAuthenticated: @js(auth()->check()),
+                    loginUrl: @js(route('login', ['return_to' => request()->getRequestUri()])),
+                    color: @js(data_get($product, 'product_variants.0.color')),
+                    swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
+                    quantity: 1,
+                    notice: '',
+                    swatchStyle(value) {
+                        const colors = String(value ?? '').split('/').map(color => this.swatchPalette[color.trim().toLowerCase()] ?? '#808080');
+                        if (colors.length === 1) return colors[0];
+                        const segment = 100 / colors.length;
+                        const stops = colors.map((color, index) => `${color} ${index * segment}% ${(index + 1) * segment}%`);
+                        return `linear-gradient(90deg, ${stops.join(', ')})`;
+                    },
+                    variants: @js(collect(data_get($product, 'product_variants', []))->map(fn ($v) => [
+                        'color' => data_get($v, 'color'),
+                        'image' => data_get($v, 'image'),
+                    ])->values()),
+                    mainFallback: @js(data_get($product, 'image')),
+                    activeImage: null,
+                    get gallery() {
+                        // รูปของทุกสี (ไม่ซ้ำ) เก็บว่าเป็นของสีไหน
+                        const seen = new Set();
+                        const items = [];
+                        this.variants.forEach(v => {
+                            if (v.image && !seen.has(v.image)) {
+                                seen.add(v.image);
+                                items.push({ src: v.image, color: v.color });
+                            }
+                        });
+                        // ไม่มีรูปของ variant เลย → ใช้รูปหลักของสินค้า
+                        if (!items.length && this.mainFallback) {
+                            items.push({ src: this.mainFallback, color: null });
+                        }
+                        return items;
+                    },
+                    get mainImage() {
+                        if (this.activeImage) return this.activeImage;
+                        const v = this.variants.find(v => v.color === this.color);
+                        return v?.image ?? this.gallery[0]?.src ?? this.mainFallback;
+                    },
+                    revealActive() {
+                        const i = this.gallery.findIndex(g => g.src === this.mainImage);
+                        if (i < 0) return;
+                        if (i < this.thumbOffset) this.thumbOffset = i;
+                        else if (i >= this.thumbOffset + this.thumbVisible) this.thumbOffset = i - this.thumbVisible + 1;
+                    },
+                    selectColor(value) {
+                        this.color = value;
+                        const v = this.variants.find(v => v.color === value);
+                        this.activeImage = v?.image ?? null;
+                        this.revealActive();
+                    },
+                    selectImage(item) {
+                        this.activeImage = item.src;
+                        if (item.color) this.color = item.color;
+                        this.revealActive();
+                    },
+                    thumbOffset: 0,
+                    thumbVisible: 3,
+                    get canScrollUp() { return this.thumbOffset > 0; },
+                    get canScrollDown() { return this.thumbOffset + this.thumbVisible < this.gallery.length; },
+                    scrollThumbs(dir) {
+                        const max = Math.max(0, this.gallery.length - this.thumbVisible);
+                        this.thumbOffset = Math.min(max, Math.max(0, this.thumbOffset + dir));
+                    },
+                    validateTension() {
+                        if (!this.requiresTension) {
+                            this.tension = 0;
+                            this.tensionError = '';
+                            return true;
+                        }
 
+                        const enteredTension = String(this.tension).trim();
+                        const numericTension = Number(enteredTension);
+
+                        if (!enteredTension || !Number.isInteger(numericTension)) {
+                            this.tensionError = 'Please enter a whole-number tension.';
+                            return false;
+                        }
+
+                        if (!Number.isInteger(this.maxTension) || this.maxTension < this.minimumTension) {
+                            this.tensionError = 'Tension limits are unavailable for this product. Please try again later.';
+                            return false;
+                        }
+
+                        if (numericTension < this.minimumTension || numericTension > this.maxTension) {
+                            this.tensionError = `Enter a tension from ${this.minimumTension} to ${this.maxTension} lbs.`;
+                            return false;
+                        }
+
+                        this.tension = numericTension;
+                        this.tensionError = '';
+                        return true;
+                    },
+                    addToCart() {
+                        if (!this.isAuthenticated) {
+                            window.location.assign(this.loginUrl);
+                            return;
+                        }
+                        if (!this.validateTension()) return;
+                        // ให้ CartController บันทึก product/variant/tension/quantity โดยตรวจราคาและ stock จากฐานข้อมูล
+                        this.notice = 'Cart service is not connected yet.';
+                    },
+                    buyNow() {
+                        if (!this.isAuthenticated) {
+                            window.location.assign(this.loginUrl);
+                            return;
+                        }
+                        if (!this.validateTension()) return;
+                        // ให้ CheckoutController สร้าง checkout จากข้อมูลสินค้าฝั่ง server ไม่รับราคา/รายการจาก browser
+                        this.notice = 'Checkout service is not connected yet.';
+                    }
+                }
+        ">
+        {{-- Thumbs --}}
+        <div class="order-2 md:order-1 md:relative">
+            {{-- มือถือ: แถวแนวนอนเลื่อนได้ --}}
+            <div class="flex gap-3 overflow-x-auto md:hidden">
+                <template x-for="item in gallery" :key="'m' + item.src">
+                    <button type="button" @click="selectImage(item)"
+                            :class="mainImage === item.src ? 'border-ink opacity-100' : 'border-mist opacity-40'"
+                            class="aspect-square w-20 shrink-0 overflow-hidden rounded-lg border bg-tile transition"
+                            aria-label="Product image">
+                        <img :src="item.src" alt="" class="size-full object-cover">
+                    </button>
+                </template>
+            </div>
+
+            {{-- desktop: แนวตั้ง สูงเท่ารูปหลัก --}}
+            <div class="hidden md:absolute md:inset-0 md:flex md:flex-col md:gap-2" x-show="gallery.length" >
+                <button type="button" x-show="gallery.length > thumbVisible" @click="scrollThumbs(-1)"
+                        :disabled="!canScrollUp" aria-label="Previous images"
+                        class="grid h-6 shrink-0 place-items-center rounded text-ink transition hover:bg-mist disabled:opacity-30">
+                    <svg class="size-4 -rotate-90" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m7 4 6 6-6 6"/></svg>
+                </button>
+
+                <div class="min-h-0 flex-1 overflow-hidden">
+                    <div class="flex h-full flex-col gap-2 transition-transform duration-300"
+                        :style="`transform: translateY(calc(${thumbOffset} * -1 * (100% + 0.5rem) / ${thumbVisible}))`">
+                        <template x-for="item in gallery" :key="'d' + item.src">
+                            <button type="button" @click="selectImage(item)"
+                                    :aria-current="mainImage === item.src"
+                                    :style="`height: calc((100% - ${(thumbVisible - 1) * 0.5}rem) / ${thumbVisible})`"
+                                    :class="mainImage === item.src ? 'border-ink opacity-100' : 'border-mist opacity-40 hover:opacity-70'"
+                                    class="w-full shrink-0 overflow-hidden rounded-lg border bg-tile transition"
+                                    aria-label="Product image">
+                                <img :src="item.src" alt="" class="size-full object-cover">
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <button type="button" x-show="gallery.length > thumbVisible" @click="scrollThumbs(1)"
+                        :disabled="!canScrollDown" aria-label="Next images"
+                        class="grid h-6 shrink-0 place-items-center rounded text-ink transition hover:bg-mist disabled:opacity-30">
+                    <svg class="size-4 rotate-90" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m7 4 6 6-6 6"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="order-1 aspect-square overflow-hidden rounded-xl border border-mist bg-tile md:order-2">
+            <template x-if="mainImage">
+                <img :src="mainImage" alt="{{ data_get($product, 'name') }}" class="size-full object-cover">
+            </template>
+        </div>
         {{-- Info --}}
         <div
             class="order-3"
-            x-data="{
-                tension: '',
-                minimumTension: @js($minimum_tension),
-                maxTension: @js($max_tension),
-                tensionError: '',
-                requiresTension: @js($requires_tension),
-                isAuthenticated: @js(auth()->check()),
-                loginUrl: @js(route('login', ['return_to' => request()->getRequestUri()])),
-                color: @js(data_get($product, 'product_variants.0.color')),
-                swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
-                quantity: 1,
-                notice: '',
-                swatchStyle(value) {
-                    const colors = String(value ?? '').split('/').map(color => this.swatchPalette[color.trim().toLowerCase()] ?? '#808080');
-                    if (colors.length === 1) return colors[0];
-                    const segment = 100 / colors.length;
-                    const stops = colors.map((color, index) => `${color} ${index * segment}% ${(index + 1) * segment}%`);
-                    return `linear-gradient(90deg, ${stops.join(', ')})`;
-                },
-                validateTension() {
-                    if (!this.requiresTension) {
-                        this.tension = 0;
-                        this.tensionError = '';
-                        return true;
-                    }
-
-                    const enteredTension = String(this.tension).trim();
-                    const numericTension = Number(enteredTension);
-
-                    if (!enteredTension || !Number.isInteger(numericTension)) {
-                        this.tensionError = 'Please enter a whole-number tension.';
-                        return false;
-                    }
-
-                    if (!Number.isInteger(this.maxTension) || this.maxTension < this.minimumTension) {
-                        this.tensionError = 'Tension limits are unavailable for this product. Please try again later.';
-                        return false;
-                    }
-
-                    if (numericTension < this.minimumTension || numericTension > this.maxTension) {
-                        this.tensionError = `Enter a tension from ${this.minimumTension} to ${this.maxTension} lbs.`;
-                        return false;
-                    }
-
-                    this.tension = numericTension;
-                    this.tensionError = '';
-                    return true;
-                },
-                addToCart() {
-                    if (!this.isAuthenticated) {
-                        window.location.assign(this.loginUrl);
-                        return;
-                    }
-                    if (!this.validateTension()) return;
-                    // ให้ CartController บันทึก product/variant/tension/quantity โดยตรวจราคาและ stock จากฐานข้อมูล
-                    this.notice = 'Cart service is not connected yet.';
-                },
-                buyNow() {
-                    if (!this.isAuthenticated) {
-                        window.location.assign(this.loginUrl);
-                        return;
-                    }
-                    if (!this.validateTension()) return;
-                    // ให้ CheckoutController สร้าง checkout จากข้อมูลสินค้าฝั่ง server ไม่รับราคา/รายการจาก browser
-                    this.notice = 'Checkout service is not connected yet.';
-                }
-            }"
+            
         >
             <div class="flex items-start gap-3">
                 <h1 class="min-w-0 text-4xl font-bold">{{ data_get($product, 'name') }}</h1>
@@ -150,7 +240,7 @@
                 @foreach (data_get($product, 'product_variants', []) as $product_variant)
                     <button
                         type="button"
-                        @click="color = @js(data_get($product_variant, 'color'))"
+                        @click="selectColor(@js(data_get($product_variant, 'color')))"
                         :aria-pressed="color === @js(data_get($product_variant, 'color'))"
                         aria-label="Select color {{ data_get($product_variant, 'color') }}"
                         :class="color === @js(data_get($product_variant, 'color')) ? 'ring-brand' : 'ring-transparent'"
