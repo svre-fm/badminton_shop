@@ -192,7 +192,7 @@
             matchesValue(product, key, values) {
                 if (!values.length) return true;
                 const productValue = key === 'color'
-                    ? (product.product_variants ?? []).map(product_variant => product_variant.color)
+                    ? (product.product_variants ?? []).flatMap(product_variant => String(product_variant.color ?? '').split('/').map(color => color.trim()))
                     : product[key];
                 return Array.isArray(productValue)
                     ? values.some(value => productValue.includes(value))

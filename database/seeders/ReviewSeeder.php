@@ -38,11 +38,11 @@ class ReviewSeeder extends Seeder
 
         $today = Carbon::today();
 
-        // เฉพาะ order ที่จัดส่งสำเร็จ รวมรายการสินค้า (รวมสีที่ซ้ำสินค้าเดียวกันให้เหลือรีวิวเดียว)
+        // เฉพาะ order ที่เสร็จสมบูรณ์ รวมรายการสินค้า (รวมสีที่ซ้ำสินค้าเดียวกันให้เหลือรีวิวเดียว)
         $lines = DB::table('orders')
             ->join('order_items', 'order_items.order_no', '=', 'orders.order_no')
             ->join('products', 'products.product_id', '=', 'order_items.product_id')
-            ->where('orders.status', SeedHelper::STATUS_DELIVERED)
+            ->where('orders.status', SeedHelper::STATUS_COMPLETE)
             ->whereNotNull('orders.customer_id')
             ->orderBy('orders.order_no')
             ->get([
