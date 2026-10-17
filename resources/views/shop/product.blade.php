@@ -151,7 +151,29 @@
                     <button type="button" @click="quantity = Math.max(1, Number(quantity) + 1)" aria-label="Increase quantity"
                             class="grid size-8 place-items-center rounded-full bg-brand text-white">+</button>
                 </div>
-                <button type="button" @click="addToCart()" class="rounded bg-mist px-5 py-2 transition hover:bg-brand hover:text-white">Add to cart</button>
+                
+                <form
+                    method="POST"
+                    action="{{ route('cart.store') }}"
+                    @submit="if (!validateTension()) $event.preventDefault()"
+                >
+                    @csrf
+                    <input
+                        type="hidden"
+                        name="product_id"
+                        value="{{ data_get($product, 'product_id') }}"
+                    >
+                    <input type="hidden" name="color" x-model="color">
+                    <input type="hidden" name="quantity" x-model="quantity">
+                    <input type="hidden" name="tension" x-model="tension">
+                    <button
+                        type="submit"
+                        class="rounded bg-mist px-5 py-2 transition hover:bg-brand hover:text-white"
+                    >
+                        Add to cart
+                    </button>
+                </form>
+                
                 <button type="button" @click="buyNow()" class="rounded bg-ink px-8 py-2 text-white transition hover:bg-brand">Buy</button>
                 <x-shop.product-heart />
             </div>
@@ -229,3 +251,22 @@
         </section>
     @endif
 </x-layouts.shop>
+
+
+@if (session('status'))
+    <p role="status" class="mt-4 text-sm font-medium text-green-700">
+        {{ session('status') }}
+    </p>
+@endif
+@if (session('error'))
+    <p role="alert" class="mt-4 text-sm font-medium text-red-700">
+        {{ session('error') }}
+    </p>
+@endif
+@if ($errors->any())
+    <ul role="alert" class="mt-4 text-sm text-red-700">
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+@endif

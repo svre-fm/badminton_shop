@@ -3,6 +3,7 @@ use App\Http\Controllers\AddressController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CreditCardController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CartController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/home')->name('root');
@@ -34,10 +35,14 @@ Route::get('/product/{category}/{product_id}', [ProductController::class, 'show'
 Route::redirect('/dashboard', '/home');
 
 Route::middleware('auth')->group(function () {
+
+    //CartController
     Route::redirect('/cart', '/cart_item')
         ->name('cart.legacy');
-    Route::view('/cart_item', 'shop.cart')
+    Route::get('/cart_item', [CartController::class, 'index'])
         ->name('cart');
+    Route::post('/cart_item', [CartController::class, 'store'])
+        ->name('cart.store');
 
     // Route Methods
     // get	Read data (e.g., Route::get('/users', ...))
