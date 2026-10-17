@@ -78,6 +78,19 @@ class ProductControllerTest extends TestCase
         $this->assertEqualsCanonicalizing($this->created, $this->mine($res));
     }
 
+    public function test_index_page_renders_cards_filters_and_empty_favorites_for_guest(): void
+    {
+        $res = $this->index(['type' => 'racket', 'balance_point' => ['Head Heavy']])->assertOk();
+
+        $res->assertSee('Test Racket A')
+            ->assertSee('Test Racket C')
+            ->assertDontSee('Test Racket B')     // Even Balance ถูกกรองออก
+            ->assertSee('Balance Point')          // ชื่อกลุ่มตัวกรอง
+            ->assertSee('Applied Filters');       // ป้ายตัวกรองที่เลือกอยู่
+
+        $res->assertViewHas('favoriteIds', []);
+    }
+
     // =====================================================================
     // index: ตัวกรองสเปค
     // =====================================================================

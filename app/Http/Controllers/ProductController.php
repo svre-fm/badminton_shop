@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
+    /** สถานะคำสั่งซื้อที่นับเป็น "ขายแล้ว" สำหรับอันดับสินค้าขายดี (orders.status) */
+    public const SOLD_STATUS = 'delivered';
+
     /**
      * ตั้งค่าตัวกรองสเปคของแต่ละหมวด
      *
@@ -59,7 +62,8 @@ class ProductController extends Controller
 
     public function index(Request $request)
     {
-        $selectedType = $request->query('type') ? strtoupper($request->query('type')) : null;
+        $type = $request->query('type');
+        $selectedType = is_string($type) && $type !== '' ? strtoupper($type) : null;
         if ($selectedType && ! isset($this->typeConfigs[$selectedType])) {
             $selectedType = null;   // หมวดที่ไม่รู้จัก = แสดงทุกหมวด
         }
@@ -69,17 +73,19 @@ class ProductController extends Controller
         // ----------------------------------------------------
         // A. ตัวกรองทั่วไป (ใช้ได้กับทุกหมวด)
         // ----------------------------------------------------
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
+        if (is_numeric($request->query('min_price'))) {
+            $query->where('price', '>=', $request->query('min_price'));
         }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-        if ($request->filled('brand')) {
-            $query->whereIn('brand', (array) $request->brand);
+        if (is_numeric($request->query('max_price'))) {
+            $query->where('price', '<=', $request->query('max_price'));
         }
 
-        $colors = $request->filled('color') ? (array) $request->color : null;
+        $brands = $this->values($request, 'brand');
+        if ($brands) {
+            $query->whereIn('brand', $brands);
+        }
+
+        $colors = $this->values($request, 'color');
         if ($colors) {
             $query->whereHas('variants', fn ($q) => $this->whereColorIn($q, $colors));
         }
@@ -97,11 +103,11 @@ class ProductController extends Controller
                 $multi = $config['multi'] ?? [];
 
                 foreach ($config['fields'] as $column => $param) {
-                    if (! $request->filled($param)) {
+                    $values = $this->values($request, $param);
+
+                    if ($values === []) {
                         continue;
                     }
-
-                    $values = (array) $request->input($param);
 
                     if (in_array($column, $multi, true)) {
                         // คอลัมน์หลายค่า: เลือกหลายตัวเลือก = มีลักษณะใดลักษณะหนึ่ง (OR)
@@ -145,8 +151,11 @@ class ProductController extends Controller
                 break;
 
             case 'top_sale':
-                $query->withSum('orderItems', 'quantity')
-                      ->orderBy('order_items_sum_quantity', 'desc');
+                // ยอดขายรวมจำนวนชิ้น นับเฉพาะคำสั่งซื้อที่จัดส่งสำเร็จ (orders.status = 'delivered')
+                // สินค้าที่ยังไม่มียอดขายจะได้ NULL และอยู่ท้ายสุดเมื่อเรียงมากไปน้อย
+                $query->withSum(['orderItems as sold_quantity' => function ($q) {
+                    $q->whereHas('order', fn ($o) => $o->where('status', self::SOLD_STATUS));
+                }], 'quantity')->orderByDesc('sold_quantity');
                 break;
 
             case 'latest':
@@ -207,6 +216,19 @@ class ProductController extends Controller
     // =====================================================================
     // ตัวช่วยกรอง
     // =====================================================================
+
+    /**
+     * อ่านค่าจาก query string เป็นอาเรย์ของข้อความ โดยตัดค่าว่างและค่าที่ไม่ใช่ข้อความ/ตัวเลข
+     * (เช่น color[][]=x) ออก เพื่อไม่ให้ทำให้ query พังเป็น 500
+     */
+    private function values(Request $request, string $key): array
+    {
+        return collect((array) $request->input($key))
+            ->filter(fn ($v) => is_scalar($v) && trim((string) $v) !== '')
+            ->map(fn ($v) => (string) $v)
+            ->values()
+            ->all();
+    }
 
     /**
      * สีใน productvariants อาจเป็นสีเดียว ("Black") หรือหลายสีคั่นด้วย "/" ("Black/Orange")

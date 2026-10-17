@@ -104,7 +104,7 @@
                     if (this.maxQty < 1) { this.notice = 'This color is out of stock.'; return; }
                     try {
                         localStorage.setItem('badminton-shop-buy-now', JSON.stringify([this.item]));
-                        window.location.href = @js(route('checkout') . '?buy_now=1');
+                        window.location.href = @js(Route::has('checkout') ? route('checkout') . '?buy_now=1' : '#');
                     } catch (error) {
                         this.notice = 'Could not prepare checkout on this device. Please try again.';
                     }
@@ -179,7 +179,9 @@
             </div>
             <p x-cloak x-show="notice" role="status" class="mt-4 text-sm font-medium text-brand">
                 <span x-text="notice"></span>
-                <a x-show="notice === 'Added to cart.'" href="{{ route('cart') }}" class="ml-2 underline underline-offset-2">View cart</a>
+                @if (Route::has('cart'))
+                    <a x-show="notice === 'Added to cart.'" href="{{ route('cart') }}" class="ml-2 underline underline-offset-2">View cart</a>
+                @endif
             </p>
         </div>
     </div>
