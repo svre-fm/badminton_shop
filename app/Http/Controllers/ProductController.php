@@ -9,7 +9,31 @@ use Illuminate\Support\Facades\DB;
 class ProductController extends Controller
 {
     /** สถานะคำสั่งซื้อที่นับเป็น "ขายแล้ว" สำหรับอันดับสินค้าขายดี (orders.status) */
-    public const SOLD_STATUS = 'delivered';
+    public const SOLD_STATUS = 'Complete';
+
+    public function home()
+    {
+        $completedOrderItems = fn ($query) => $query->whereHas(
+            'order',
+            fn ($order) => $order->where('status', self::SOLD_STATUS)
+        );
+
+        $bestSellers = products::query()
+            ->whereHas('orderItems', $completedOrderItems)
+            ->with(['variants'])
+            ->withAvg('reviews', 'star')
+            ->withSum(['orderItems as sold_quantity' => $completedOrderItems], 'quantity')
+            ->orderByDesc('sold_quantity')
+            ->orderByDesc('product_id')
+            ->limit(15)
+            ->get();
+
+        $favoriteIds = auth()->check()
+            ? DB::table('favorites')->where('customer_id', auth()->id())->pluck('product_id')->all()
+            : [];
+
+        return view('home', compact('bestSellers', 'favoriteIds'));
+    }
 
     /**
      * ตั้งค่าตัวกรองสเปคของแต่ละหมวด
@@ -151,7 +175,7 @@ class ProductController extends Controller
                 break;
 
             case 'top_sale':
-                // ยอดขายรวมจำนวนชิ้น นับเฉพาะคำสั่งซื้อที่จัดส่งสำเร็จ (orders.status = 'delivered')
+                // ยอดขายรวมจำนวนชิ้น นับเฉพาะคำสั่งซื้อที่เสร็จสมบูรณ์ (orders.status = 'Complete')
                 // สินค้าที่ยังไม่มียอดขายจะได้ NULL และอยู่ท้ายสุดเมื่อเรียงมากไปน้อย
                 $query->withSum(['orderItems as sold_quantity' => function ($q) {
                     $q->whereHas('order', fn ($o) => $o->where('status', self::SOLD_STATUS));

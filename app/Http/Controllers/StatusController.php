@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class StatusController extends Controller
+{
+    private const STATUS_GROUPS = [
+        'all' => ['label' => 'All', 'statuses' => null],
+        'to_ship' => ['label' => 'To ship', 'statuses' => ['To ship']],
+        'to_receive' => ['label' => 'To Recieve', 'statuses' => ['To Recieve']],
+        'completed' => ['label' => 'Complete', 'statuses' => ['Complete']],
+        'cancelled' => ['label' => 'Cancelled', 'statuses' => ['Cancelled']],
+    ];
+
+    public function index(Request $request)
+    {
+        $selectedStatus = $request->query('status', 'all');
+        if (! is_string($selectedStatus) || ! isset(self::STATUS_GROUPS[$selectedStatus])) {
+            $selectedStatus = 'all';
+        }
+
+        $orders = $request->user()
+            ->orders()
+            ->with(['items.product'])
+            ->when(
+                self::STATUS_GROUPS[$selectedStatus]['statuses'],
+                fn ($query, $statuses) => $query->whereIn('status', $statuses)
+            )
+            ->orderByDesc('order_date')
+            ->orderByDesc('order_no')
+            ->get();
+
+        $orderStatusCounts = DB::table('orders')
+            ->where('customer_id', $request->user()->id)
+            ->select('status', DB::raw('COUNT(*) as total'))
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $statusGroups = collect(self::STATUS_GROUPS)
+            ->map(fn ($group, $key) => [
+                'key' => $key,
+                'label' => $group['label'],
+                'count' => $key === 'all'
+                    ? $orderStatusCounts->sum()
+                    : collect($group['statuses'])->sum(fn ($status) => (int) ($orderStatusCounts[$status] ?? 0)),
+            ]);
+
+        return view('orders.status', compact('orders', 'selectedStatus', 'statusGroups'));
+    }
+}
