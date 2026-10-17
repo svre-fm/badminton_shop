@@ -289,6 +289,7 @@
                 <div>
                     @if (data_get($product, 'rating'))
                         <p class="text-6xl font-bold">{{ data_get($product, 'rating') }} <span class="text-2xl font-normal text-muted">out of 5</span></p>
+                        <x-shop.star-rating :rating="data_get($product, 'rating')" class="mt-2" />
                     @endif
                 </div>
                 <div class="flex flex-wrap gap-3">
@@ -323,7 +324,7 @@
                         <div class="flex items-center gap-3">
                             <div>
                                 <p class="text-xl">{{ data_get($review, 'customer.name') }} <span class="text-xs text-muted">{{ $review_date }}</span></p>
-                                <p class="text-star" aria-label="{{ data_get($review, 'star') }} stars">{{ str_repeat('★', data_get($review, 'star')) }}<span class="text-zinc-200">{{ str_repeat('★', 5 - data_get($review, 'star')) }}</span></p>
+                                <x-shop.star-rating :rating="data_get($review, 'star')" size="text-xl" />
                             </div>
                         </div>
                         <p class="mt-3 text-muted">{{ data_get($review, 'comment') }}</p>
