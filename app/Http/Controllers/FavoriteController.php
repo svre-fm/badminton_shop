@@ -18,7 +18,7 @@ class FavoriteController extends Controller
             ->orderBy('products.product_id')
             ->get();
 
-        return view('favorites.index', compact('favorites'));
+        return view('shop.favorites', compact('favorites'));
     }
 
     /**

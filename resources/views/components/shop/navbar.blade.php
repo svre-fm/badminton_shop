@@ -92,37 +92,64 @@
                 <ul x-show="open" x-cloak x-transition.opacity
                     class="absolute right-0 top-full z-30 mt-2 w-64 divide-y divide-mist overflow-hidden rounded-xl border border-mist bg-white text-muted shadow-xl">
                     @auth
-                        <li class="flex items-center gap-3 px-3 py-3">
-                            <span class="grid size-10 shrink-0 place-items-center rounded-full bg-brand text-sm font-semibold text-white">
-                                {{ auth()->user()->initials() }}
-                            </span>
-                            <span class="min-w-0">
-                                <span class="block truncate font-medium text-ink">{{ auth()->user()->name }}</span>
-                                <span class="block truncate text-xs">{{ auth()->user()->email }}</span>
-                            </span>
-                        </li>
                         <li>
                             <a href="{{ route('profile.edit') }}"
-                               @class([
-                                   'block px-3 py-2 font-medium transition',
-                                   'bg-page text-brand' => request()->routeIs('profile.edit'),
-                                   'text-muted hover:bg-mist hover:text-ink' => ! request()->routeIs('profile.edit'),
-                               ])>
+                            @class([
+                                'flex items-center gap-3 px-3 py-2 font-medium transition',
+                                'bg-page text-brand' => request()->routeIs('profile.edit'),
+                                'text-muted hover:bg-mist hover:text-ink' => ! request()->routeIs('profile.edit'),
+                            ])>
+                                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>
+                                </svg>
                                 Member information
                             </a>
                         </li>
-                        <li><a href="{{ route('favorites') }}" class="block px-3 py-2 hover:bg-mist hover:text-ink">Favorites</a></li>
-                        <li><a href="{{ route('orders') }}" class="block px-3 py-2 hover:bg-mist hover:text-ink">Order status</a></li>
+                        <li>
+                            <a href="{{ route('favorites') }}" class="flex items-center gap-3 px-3 py-2 hover:bg-mist hover:text-ink">
+                                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
+                                </svg>
+                                Favorites
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('orders') }}" class="flex items-center gap-3 px-3 py-2 hover:bg-mist hover:text-ink">
+                                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>
+                                </svg>
+                                Order status
+                            </a>
+                        </li>
                         <li>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button class="block w-full px-3 py-2 text-left hover:bg-mist hover:text-ink">Log out</button>
+                                <button type="submit" class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-mist hover:text-ink">
+                                    <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>
+                                    </svg>
+                                    Log out
+                                </button>
                             </form>
                         </li>
                     @else
-                        <li><a href="{{ route('login', $returnQuery) }}" class="block px-3 py-2 hover:bg-mist hover:text-ink">Log in</a></li>
+                        <li>
+                            <a href="{{ route('login', $returnQuery) }}" class="flex items-center gap-3 px-3 py-2 hover:bg-mist hover:text-ink">
+                                <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17-5-5 5-5"/><path d="M5 12h12"/>
+                                </svg>
+                                Log in
+                            </a>
+                        </li>
                         @if (Route::has('register'))
-                            <li><a href="{{ route('register', $returnQuery) }}" class="block px-3 py-2 hover:bg-mist hover:text-ink">Register</a></li>
+                            <li>
+                                <a href="{{ route('register', $returnQuery) }}" class="flex items-center gap-3 px-3 py-2 hover:bg-mist hover:text-ink">
+                                    <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="10" cy="8" r="4"/><path d="M2 21c0-4 3.6-6.5 8-6.5"/><path d="M19 14v6"/><path d="M16 17h6"/>
+                                    </svg>
+                                    Register
+                                </a>
+                            </li>
                         @endif
                     @endauth
                 </ul>

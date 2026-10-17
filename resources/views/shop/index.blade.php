@@ -271,6 +271,47 @@
                 ]);
                 this.syncQuery();
             },
+            csrfToken: @js(csrf_token()),
+            isFavorite(id) {
+                return this.favoriteProductIds.includes(Number(id));
+            },
+            async toggleFavorite(product) {
+                if (!this.isAuthenticated) {
+                    window.location.assign(this.loginUrl);
+                    return;
+                }
+
+                const id = Number(product.product_id);
+                const was = this.isFavorite(id);
+
+                // อัปเดตทันที (optimistic) แล้วค่อยย้อนกลับถ้า server พลาด
+                this.favoriteProductIds = was
+                    ? this.favoriteProductIds.filter(x => x !== id)
+                    : [...this.favoriteProductIds, id];
+
+                try {
+                    const res = await fetch(this.favoriteToggleUrl.replace('__PRODUCT__', id), {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': this.csrfToken,
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    if (!res.ok) throw new Error(res.status);
+                    const data = await res.json();
+
+                    // ใช้ค่าจริงจาก server เป็นหลัก
+                    const has = this.isFavorite(id);
+                    if (data.favorited && !has) this.favoriteProductIds = [...this.favoriteProductIds, id];
+                    if (!data.favorited && has) this.favoriteProductIds = this.favoriteProductIds.filter(x => x !== id);
+                } catch (e) {
+                    // ย้อนกลับ
+                    this.favoriteProductIds = was
+                        ? [...this.favoriteProductIds, id]
+                        : this.favoriteProductIds.filter(x => x !== id);
+                }
+            },
         }"
     >
         <aside x-show="products.length" class="h-fit rounded-2xl border border-mist bg-page p-4 sm:p-5" aria-label="Product filters">
@@ -515,30 +556,16 @@
 
                             {{-- หัวใจ: มุมขวาล่าง --}}
                             <div class="absolute bottom-2 right-2 z-10">
-                                <template x-if="isAuthenticated">
-                                    <form method="POST" :action="favoriteToggleUrl.replace('__PRODUCT__', product.product_id)" @click.stop>
-                                        @csrf
-                                        <input type="hidden" name="favorited" :value="favoriteProductIds.includes(Number(product.product_id)) ? 0 : 1">
-                                        <button type="submit"
-                                            :aria-pressed="favoriteProductIds.includes(Number(product.product_id)) ? 'true' : 'false'"
-                                            :aria-label="favoriteProductIds.includes(Number(product.product_id)) ? 'Remove from favorites' : 'Add to favorites'"
-                                            class="inline-flex cursor-pointer text-heart/60 transition hover:text-heart"
-                                            :class="favoriteProductIds.includes(Number(product.product_id)) ? 'text-heart' : ''">
-                                            <svg class="size-5" viewBox="0 0 24 24" stroke="#ff7373" stroke-width="1.5"
-                                                :fill="favoriteProductIds.includes(Number(product.product_id)) ? '#ff7373' : 'none'">
-                                                <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
-                                            </svg>
-                                        </button>
-                                    </form>
-                                </template>
-                                <template x-if="!isAuthenticated">
-                                    <a :href="loginUrl" aria-label="Log in to add this product to favorites"
-                                        class="inline-flex cursor-pointer text-heart/60 transition hover:text-heart">
-                                        <svg class="size-5" viewBox="0 0 24 24" stroke="#ff7373" stroke-width="1.5" fill="none" aria-hidden="true">
-                                            <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
-                                        </svg>
-                                    </a>
-                                </template>
+                                <button type="button"
+                                        @click.stop.prevent="toggleFavorite(product)"
+                                        :aria-pressed="isFavorite(product.product_id)"
+                                        :aria-label="isFavorite(product.product_id) ? 'Remove from favorites' : 'Add to favorites'"
+                                        class="inline-flex cursor-pointer transition hover:scale-110">
+                                    <svg class="size-5" viewBox="0 0 24 24" stroke="#ff7373" stroke-width="1.5"
+                                        :fill="isFavorite(product.product_id) ? '#ff7373' : 'none'" aria-hidden="true">
+                                        <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-muted" x-text="product.brand"></p>
@@ -546,7 +573,7 @@
                             <h2 class="truncate font-medium text-ink" x-text="product.name"></h2>
                             <span class="shrink-0 text-muted" x-text="'฿' + new Intl.NumberFormat('th-TH').format(product.price)"></span>
                         </div>
-                        <template x-if="product_type === 'RACKET' && product.product_variants?.length">
+                        <template x-if="product.product_variants?.length">
                             <div class="mt-2 flex items-center gap-1.5" aria-label="Product color">
                                 <template x-for="product_variant in product.product_variants" :key="product_variant.product_id + product_variant.color">
                                     <span class="size-3 rounded-full border border-black/10" :style="'background: ' + swatchStyle(product_variant.color)" :title="product_variant.color"></span>
