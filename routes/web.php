@@ -1,7 +1,13 @@
 <?php
 
+use App\Http\Controllers\AddressController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CreditCardController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\StatusController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/home')->name('root');
@@ -34,16 +40,27 @@ Route::redirect('/dashboard', '/home');
 
 Route::middleware('auth')->group(function () {
     Route::redirect('/cart', '/cart_item')->name('cart.legacy');
-    Route::view('/cart_item', 'shop.cart')->name('cart');
+    Route::get('/cart_item', [CartController::class, 'index'])->name('cart');
+    Route::post('/cart_item', [CartController::class, 'store'])->name('cart.store');
+    Route::patch('/cart_item/{productId}', [CartController::class, 'update'])->whereNumber('productId')->name('cart.update');
+    Route::delete('/cart_item/{productId}', [CartController::class, 'destroy'])->whereNumber('productId')->name('cart.destroy');
 
-    Route::view('/checkout', 'shop.checkout')->name('checkout');
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
+    Route::post('/checkout/items', [CheckoutController::class, 'selectItems'])->name('checkout.items');
+    Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.place');
 
-    Route::view('/add-address', 'shop.address-form')->name('address.create');
-    Route::view('/edit-address/{id}', 'shop.address-form')->name('address.edit');
+    Route::get('/add-address', [AddressController::class, 'create'])->name('address.create');
+    Route::post('/add-address', [AddressController::class, 'store'])->name('address.store');
+    Route::get('/edit-address/{address}', [AddressController::class, 'edit'])->whereNumber('address')->name('address.edit');
+    Route::put('/edit-address/{address}', [AddressController::class, 'update'])->whereNumber('address')->name('address.update');
+    Route::delete('/address/{address}', [AddressController::class, 'destroy'])->whereNumber('address')->name('address.destroy');
 
-    Route::view('/add-credit-card', 'shop.add-credit-card')->name('payment-method.create');
+    Route::get('/add-credit-card', [CreditCardController::class, 'create'])->name('payment-method.create');
+    Route::post('/add-credit-card', [CreditCardController::class, 'store'])->name('payment-method.store');
 
-    Route::view('/review', 'shop.review')->name('review.create');
+    Route::get('/review', [ReviewController::class, 'create'])->name('review.create');
+    Route::post('/product/{product}/review', [ReviewController::class, 'store'])->whereNumber('product')->name('review.store');
+    Route::delete('/product/{product}/review/{review}', [ReviewController::class, 'destroy'])->whereNumber('product')->whereNumber('review')->name('review.destroy');
 
     Route::redirect('/favorites', '/favorite')->name('favorites.legacy');
     Route::get('/favorite', [FavoriteController::class, 'index'])->name('favorites');
@@ -52,7 +69,7 @@ Route::middleware('auth')->group(function () {
         ->name('favorites.toggle');
 
     Route::redirect('/orders', '/status-delivery')->name('orders.legacy');
-    Route::view('/status-delivery', 'shop.orders')->name('orders');
+    Route::get('/status-delivery', [StatusController::class, 'index'])->name('orders');
 });
 
 require __DIR__.'/settings.php';

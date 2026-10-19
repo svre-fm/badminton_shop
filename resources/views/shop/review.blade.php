@@ -9,20 +9,13 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand">Your feedback</p>
                 <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">Write your review</h1>
                 <p class="mt-2 text-sm text-muted">
-                    {{ request()->query('product', 'Share your experience with this product') }}
+                    {{ $product->name }}
                 </p>
             </header>
 
-            {{-- ฟอร์มยังไม่ส่งข้อมูล ให้ ReviewController validate star/comment
-                 และตรวจว่าสมาชิกซื้อสินค้าจาก order นี้จริงก่อนบันทึก review --}}
-            <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-                This is a design preview. Reviews are not submitted until the review backend is connected.
-            </div>
-
-            <form x-data="{ rating: 0, attempted: false }" @submit.prevent="attempted = true" class="mt-7 space-y-6">
-                {{-- ReviewController รับ product_id/order_no จาก query และต้องตรวจสิทธิ์ซื้อก่อนบันทึก --}}
-                <input type="hidden" name="product_id" value="{{ request()->query('product_id') }}">
-                <input type="hidden" name="order_no" value="{{ request()->query('order_no') }}">
+            <form x-data="{ rating: 0 }" method="POST" action="{{ route('review.store', $product) }}" class="mt-7 space-y-6">
+                @csrf
+                <input type="hidden" name="order_no" value="{{ $order->order_no }}">
                 <fieldset>
                     <legend class="mb-3 text-sm font-medium text-ink">Your rating</legend>
                     <div class="flex justify-center gap-2" role="radiogroup" aria-label="Rating from 1 to 5 stars">
@@ -54,16 +47,15 @@
                         id="review-comment"
                         name="comment"
                         rows="5"
-                        required
                         maxlength="2000"
                         class="w-full resize-y rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                         placeholder="Write your review..."
                     ></textarea>
                 </div>
 
-                <p x-cloak x-show="attempted" role="status" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                    Preview only: your review was not submitted. Backend persistence is not connected yet.
-                </p>
+                @if ($errors->any())
+                    <p role="alert" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{{ $errors->first() }}</p>
+                @endif
 
                 <div class="flex justify-center border-t border-mist pt-5">
                     <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-ink px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:w-auto sm:min-w-44">

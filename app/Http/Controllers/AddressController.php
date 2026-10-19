@@ -15,7 +15,7 @@ class AddressController extends Controller
 
     public function create()
     {
-        return view('addresses.create');
+        return view('shop.address-form');
     }
 
     public function store(Request $request)
@@ -35,7 +35,9 @@ class AddressController extends Controller
     {
         $address = $request->user()->Delivery_address()->findOrFail($address);
 
-        return view('addresses.edit', compact('address'));
+        $delivery_address = $address;
+
+        return view('shop.address-form', compact('delivery_address'));
     }
 
     public function update(Request $request, int $address)
@@ -48,13 +50,13 @@ class AddressController extends Controller
         ]);
         $address->update($validated);
 
-        return redirect()->route('addresses.index')->with('status', 'Address updated.');
+        return redirect()->route('checkout')->with('status', 'Address updated.');
     }
 
     public function destroy(Request $request, int $address)
     {
         $request->user()->Delivery_address()->findOrFail($address)->delete();
 
-        return redirect()->route('addresses.index')->with('status', 'Address deleted.');
+        return redirect()->route('checkout')->with('status', 'Address deleted.');
     }
 }

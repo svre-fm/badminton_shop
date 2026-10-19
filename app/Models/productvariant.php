@@ -22,7 +22,7 @@ class productvariant extends Model
 
     protected $keyType = 'int';
 
-    protected $fillable = ['product_id', 'color', 'stock'];
+    protected $fillable = ['product_id', 'color', 'stock', 'image'];
 
     protected function casts(): array
     {
@@ -30,6 +30,15 @@ class productvariant extends Model
             'product_id' => 'integer',
             'stock' => 'integer',
         ];
+    }
+
+    public function getImageAttribute(?string $value): ?string
+    {
+        if (! $value || str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '/')) {
+            return $value;
+        }
+
+        return asset($value);
     }
 
     public function product(): BelongsTo

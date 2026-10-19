@@ -104,32 +104,36 @@ class CheckoutController extends Controller
     {
         $validated = $request->validate([
             'delivery_id' => ['required', 'integer'],
-            'card_token' => ['required', 'string', 'size:64'],
+            'payment_method' => ['required', 'in:CREDIT_CARD,PROMPTPAY,CASH_ON_DELIVERY'],
+            'card_token' => ['nullable', 'required_if:payment_method,CREDIT_CARD', 'string', 'size:64'],
         ]);
 
         $user = $request->user();
         $address = $user->Delivery_address()
             ->where('delivery_id', $validated['delivery_id'])
             ->firstOrFail();
-        $card = $user->cards()->get()->first(function ($card) use ($user, $validated) {
-            $token = hash_hmac(
-                'sha256',
-                $user->id.':'.$card->card_no,
-                (string) config('app.key')
-            );
+        $card = null;
+        if ($validated['payment_method'] === 'CREDIT_CARD') {
+            $card = $user->cards()->get()->first(function ($card) use ($user, $validated) {
+                $token = hash_hmac(
+                    'sha256',
+                    $user->id.':'.$card->card_no,
+                    (string) config('app.key')
+                );
 
-            return hash_equals($token, $validated['card_token']);
-        });
-        abort_unless($card, 404);
+                return hash_equals($token, $validated['card_token']);
+            });
+            abort_unless($card, 404);
 
-        if (! $card->expiry_date || Carbon::parse($card->expiry_date)->endOfMonth()->endOfDay()->isPast()) {
-            throw ValidationException::withMessages(['card_token' => 'This card has expired.']);
+            if (! $card->expiry_date || Carbon::parse($card->expiry_date)->endOfMonth()->endOfDay()->isPast()) {
+                throw ValidationException::withMessages(['card_token' => 'This card has expired.']);
+            }
         }
 
         $selectedItems = $request->session()->get('checkout.cart_items');
 
-        $order = DB::transaction(function () use ($user, $address, $card, $selectedItems) {
-            $cartQuery = $user->cartItems();
+        $order = DB::transaction(function () use ($user, $address, $card, $selectedItems, $validated) {
+            $cartQuery = $user->cartItems()->with('product');
             if (is_array($selectedItems)) {
                 $cartQuery->where(function ($query) use ($selectedItems) {
                     foreach ($selectedItems as $item) {
@@ -196,9 +200,9 @@ class CheckoutController extends Controller
             DB::table('payments')->insert([
                 'user_id' => $user->id,
                 'order_no' => $orderNo,
-                'card_no' => $card->card_no,
+                'card_no' => $card?->card_no,
                 'amount' => round($total, 2),
-                'method' => 'CREDIT_CARD',
+                'method' => $validated['payment_method'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -210,7 +214,7 @@ class CheckoutController extends Controller
 
         $request->session()->forget('checkout.cart_items');
 
-        return redirect()->route('orders.status', ['status' => 'to_ship'])
+        return redirect()->route('orders', ['status' => 'to_ship'])
             ->with('status', "Order {$order->order_no} placed successfully.");
     }
 }

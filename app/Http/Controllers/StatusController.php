@@ -25,10 +25,6 @@ class StatusController extends Controller
         $orders = $request->user()
             ->orders()
             ->with(['items.product'])
-            ->when(
-                self::STATUS_GROUPS[$selectedStatus]['statuses'],
-                fn ($query, $statuses) => $query->whereIn('status', $statuses)
-            )
             ->orderByDesc('order_date')
             ->orderByDesc('order_no')
             ->get();
@@ -48,6 +44,6 @@ class StatusController extends Controller
                     : collect($group['statuses'])->sum(fn ($status) => (int) ($orderStatusCounts[$status] ?? 0)),
             ]);
 
-        return view('orders.status', compact('orders', 'selectedStatus', 'statusGroups'));
+        return view('shop.orders', compact('orders', 'selectedStatus', 'statusGroups'));
     }
 }

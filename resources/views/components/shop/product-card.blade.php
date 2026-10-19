@@ -9,14 +9,18 @@
     'href' => null,
 ])
 
-<article class="group relative w-full">
+<article {{ $attributes->class(['group relative w-full']) }}>
     <div class="relative aspect-square overflow-hidden rounded-xl bg-tile ring-2 ring-transparent transition group-hover:ring-ink border border-mist">
         @if ($image)
-            <img src="{{ $image }}" alt="" loading="lazy" class="size-full object-cover">
+            <img src="{{ $image }}" alt="{{ $name }}" loading="lazy" class="size-full object-cover">
+        @else
+            <div class="grid size-full place-items-center bg-page px-3 text-center text-sm text-muted">{{ $name }}</div>
         @endif
 
         {{-- Stretched link covers the card; badge/heart sit above it (z-10) --}}
-        <a href="{{ $href }}" class="absolute inset-0 z-0" aria-label="{{ $name }}"></a>
+        @if ($href)
+            <a href="{{ $href }}" class="absolute inset-0 z-0" aria-label="{{ $name }}"></a>
+        @endif
 
         {{-- ดาว: มุมขวาบน --}}
         @if ($rating)

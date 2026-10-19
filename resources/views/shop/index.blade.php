@@ -371,7 +371,7 @@
                                     <label class="flex cursor-pointer items-start gap-3 text-sm text-muted hover:text-ink">
                                         <input type="checkbox" :name="'filters[' + group.key + '][]'" :value="value" x-model="filters[group.key]" @change="syncQuery()" class="mt-0.5 size-4 rounded border-muted accent-brand focus:ring-brand">
                                         <span class="flex-1 leading-5" x-text="label"></span>
-                                        <span class="text-xs" x-text="products.filter(product => String(product[group.key]) === value).length"></span>
+                                        <span class="text-xs" x-text="products.filter(product => matchesValue(product, group.key, [value])).length"></span>
                                     </label>
                                 </template>
                             </template>

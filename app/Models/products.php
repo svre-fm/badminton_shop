@@ -22,6 +22,15 @@ class products extends Model
         ];
     }
 
+    public function getImageAttribute(?string $value): ?string
+    {
+        if (! $value || str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, '/')) {
+            return $value;
+        }
+
+        return asset($value);
+    }
+
     public function variants(): HasMany
     {
         return $this->hasMany(productvariant::class, 'product_id', 'product_id');

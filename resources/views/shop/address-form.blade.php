@@ -19,16 +19,9 @@
             </p>
         </header>
 
-        {{-- ใช้ delivery_address.name/phone/address; Backend ต้องกำหนด customer_id จากสมาชิกที่ยืนยันตัวตนแล้ว --}}
-        {{-- ตอนแก้ไข DeliveryAddressController ต้องโหลด delivery_address ของเจ้าของเท่านั้น และทำ store/update/delete --}}
-        <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-            This is a design preview. Address details are not saved until the backend is connected.
-            @if ($editing)
-                <span class="block">Address #{{ request()->route('id') }} will be loaded here once address storage is available.</span>
-            @endif
-        </div>
-
-        <form x-data="{ attempted: false }" @submit.prevent="attempted = true" class="mt-6 space-y-5 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-8">
+        <form method="POST" action="{{ $editing ? route('address.update', request()->route('address')) : route('address.store') }}" class="mt-6 space-y-5 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-8">
+            @csrf
+            @if ($editing) @method('PUT') @endif
             <div>
                 <label for="address-name" class="mb-2 block text-sm font-medium text-ink">Name</label>
                 <input
@@ -70,9 +63,9 @@
                 >{{ old('address', data_get($delivery_address, 'address')) }}</textarea>
             </div>
 
-            <p x-cloak x-show="attempted" role="status" class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                Preview only: no address was saved. Backend persistence is not connected yet.
-            </p>
+            @if ($errors->any())
+                <p role="alert" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{{ $errors->first() }}</p>
+            @endif
 
             <div class="flex flex-col-reverse gap-3 border-t border-mist pt-5 sm:flex-row sm:justify-end">
                 <a href="{{ route('checkout') }}" class="inline-flex min-h-11 items-center justify-center rounded-lg border border-mist px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-page">

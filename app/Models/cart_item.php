@@ -20,7 +20,7 @@ class cart_item extends Model
 
     protected $keyType = 'int';
 
-    protected $fillable = ['customer_id', 'product_id', 'color', 'quantity'];
+    protected $fillable = ['customer_id', 'product_id', 'color', 'quantity', 'racket_tension'];
 
     protected function casts(): array
     {
@@ -28,6 +28,7 @@ class cart_item extends Model
             'customer_id' => 'integer',
             'product_id' => 'integer',
             'quantity' => 'integer',
+            'racket_tension' => 'integer',
         ];
     }
 

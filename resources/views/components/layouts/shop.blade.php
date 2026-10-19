@@ -16,6 +16,16 @@
         'w-full pb-16' => $fullWidth,
         'mx-auto w-full max-w-7xl px-4 pb-16 sm:px-8' => ! $fullWidth,
     ])>
+        @if (session('status'))
+            <div class="mx-auto mt-4 w-full max-w-7xl rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">
+                {{ session('status') }}
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="mx-auto mt-4 w-full max-w-7xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+                {{ session('error') }}
+            </div>
+        @endif
         {{ $slot }}
     </main>
 

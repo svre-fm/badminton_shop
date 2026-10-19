@@ -11,6 +11,23 @@ use Illuminate\Validation\ValidationException;
 
 class ReviewController extends Controller
 {
+    public function create(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => ['required', 'integer', 'exists:products,product_id'],
+            'order_no' => ['required', 'string', 'max:255'],
+        ]);
+
+        $product = products::query()->findOrFail($validated['product_id']);
+        $order = $request->user()->orders()
+            ->where('order_no', $validated['order_no'])
+            ->where('status', 'Complete')
+            ->whereHas('items', fn ($query) => $query->where('product_id', $product->product_id))
+            ->firstOrFail();
+
+        return view('shop.review', compact('product', 'order'));
+    }
+
     public function store(Request $request, products $product): RedirectResponse
     {
         $validated = $request->validate([
@@ -49,7 +66,7 @@ class ReviewController extends Controller
         ]);
 
         return redirect()
-            ->route('products.show', $product)
+            ->route('shop.product', ['category' => $this->categorySlug($product->product_type), 'product_id' => $product->product_id])
             ->withFragment('reviews')
             ->with('status', 'Your review has been saved.');
     }
@@ -65,8 +82,18 @@ class ReviewController extends Controller
         $review->delete();
 
         return redirect()
-            ->route('products.show', $product)
+            ->route('shop.product', ['category' => $this->categorySlug($product->product_type), 'product_id' => $product->product_id])
             ->withFragment('reviews')
             ->with('status', 'Your review has been deleted.');
+    }
+
+    private function categorySlug(string $type): string
+    {
+        return match ($type) {
+            'STRING' => 'badminton-string',
+            'GRIP' => 'grip',
+            'SHUTTLECOCK' => 'shuttlecock',
+            default => 'badminton-racket',
+        };
     }
 }

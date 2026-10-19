@@ -31,6 +31,9 @@
                     swatchPalette: @js(\App\Support\ProductColorSwatch::palette()),
                     quantity: 1,
                     notice: '',
+                    busy: false,
+                    cartUrl: @js(route('cart.store')),
+                    csrf: @js(csrf_token()),
                     swatchStyle(value) {
                         const colors = String(value ?? '').split('/').map(color => this.swatchPalette[color.trim().toLowerCase()] ?? '#808080');
                         if (colors.length === 1) return colors[0];
@@ -119,23 +122,30 @@
                         this.tensionError = '';
                         return true;
                     },
-                    addToCart() {
+                    async addToCart(redirectToCart = false) {
                         if (!this.isAuthenticated) {
                             window.location.assign(this.loginUrl);
                             return;
                         }
                         if (!this.validateTension()) return;
-                        // ให้ CartController บันทึก product/variant/tension/quantity โดยตรวจราคาและ stock จากฐานข้อมูล
-                        this.notice = 'Cart service is not connected yet.';
-                    },
-                    buyNow() {
-                        if (!this.isAuthenticated) {
-                            window.location.assign(this.loginUrl);
-                            return;
+                        if (!this.color || this.busy) return;
+                        this.busy = true;
+                        this.notice = '';
+                        try {
+                            const response = await fetch(this.cartUrl, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ product_id: @js(data_get($product, 'product_id')), color: this.color, quantity: Math.max(1, Number(this.quantity)), tension: this.requiresTension ? Number(this.tension) : 0 }),
+                            });
+                            const data = await response.json().catch(() => ({}));
+                            if (!response.ok) throw new Error(data.message || 'Could not add this product to your cart.');
+                            if (redirectToCart) window.location.assign(@js(route('cart')));
+                            else this.notice = data.message || 'Product added to your cart.';
+                        } catch (error) {
+                            this.notice = error.message;
+                        } finally {
+                            this.busy = false;
                         }
-                        if (!this.validateTension()) return;
-                        // ให้ CheckoutController สร้าง checkout จากข้อมูลสินค้าฝั่ง server ไม่รับราคา/รายการจาก browser
-                        this.notice = 'Checkout service is not connected yet.';
                     }
                 }
         ">
@@ -261,8 +271,8 @@
                     <button type="button" @click="quantity = Math.max(1, Number(quantity) + 1)" aria-label="Increase quantity"
                             class="grid size-8 place-items-center rounded-full bg-brand text-white">+</button>
                 </div>
-                <button type="button" @click="addToCart()" class="rounded bg-mist px-5 py-2 transition hover:bg-brand hover:text-white">Add to cart</button>
-                <button type="button" @click="buyNow()" class="rounded bg-ink px-8 py-2 text-white transition hover:bg-brand">Buy</button>
+                <button type="button" @click="addToCart()" :disabled="busy || !color" class="rounded bg-mist px-5 py-2 transition hover:bg-brand hover:text-white disabled:cursor-not-allowed disabled:opacity-50">Add to cart</button>
+                <button type="button" @click="addToCart(true)" :disabled="busy || !color" class="rounded bg-ink px-8 py-2 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-50">Buy</button>
                 <x-shop.product-heart :product-id="data_get($product, 'product_id')" :favorited="$is_favorited ?? false" />
             </div>
             

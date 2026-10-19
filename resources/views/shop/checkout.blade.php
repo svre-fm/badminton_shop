@@ -1,10 +1,10 @@
 @php
     // ใช้ delivery_address.id/name/phone/address, cart_item + product และ credit_debit_card ตาม EER
     // orders.shipping ต้องคำนวณจาก Backend; diagram ไม่มี default address และ orders ไม่มี FK ไป delivery_address
-    $delivery_addresses = collect($delivery_addresses ?? [])->values()->all();
-    $cart_items = collect($cart_items ?? [])->values()->all();
-    $credit_debit_cards = collect($credit_debit_cards ?? [])->values()->all();
-    $shipping = isset($shipping) ? (float) $shipping : null;
+    $delivery_addresses = collect($deliveryAddresses ?? [])->values()->all();
+    $cart_items = collect($cartItems ?? [])->values()->all();
+    $credit_debit_cards = collect($creditCards ?? [])->values()->all();
+    $card_tokens = $cardTokens ?? [];
 @endphp
 
 <x-layouts.shop title="Checkout" :fullWidth="true">
@@ -15,34 +15,61 @@
             modal: false,
             delivery_addresses: @js($delivery_addresses),
             credit_debit_cards: @js($credit_debit_cards),
-            shipping: @js($shipping),
+            cardTokens: @js($card_tokens),
+            csrf: @js(csrf_token()),
+            addressDeleteUrl: @js(route('address.destroy', ['address' => '__ADDRESS__'])),
             selectedAddressId: null,
+            selectedCardToken: null,
             draftAddressId: null,
             cart_items: @js($cart_items),
             notice: '',
             init() {
                 // EER ไม่มี default flag จึงเลือก address แรก; เปลี่ยนเมื่อ schema มีข้อมูลที่อยู่หลัก
-                this.selectedAddressId = this.delivery_addresses[0]?.id ?? null;
+                this.selectedAddressId = this.delivery_addresses[0]?.delivery_id ?? null;
                 this.draftAddressId = this.selectedAddressId;
+                this.selectedCardToken = this.credit_debit_cards[0] ? this.cardTokens[this.credit_debit_cards[0].card_no] : null;
             },
             get selectedAddress() {
-                return this.delivery_addresses.find(delivery_address => delivery_address.id === this.selectedAddressId) ?? null;
+                return this.delivery_addresses.find(delivery_address => delivery_address.delivery_id === this.selectedAddressId) ?? null;
             },
             openAddressPicker() {
                 this.draftAddressId = this.selectedAddressId;
                 this.modal = true;
             },
             confirmAddress() {
-                if (!this.delivery_addresses.some(delivery_address => delivery_address.id === this.draftAddressId)) return;
+                if (!this.delivery_addresses.some(delivery_address => delivery_address.delivery_id === this.draftAddressId)) return;
                 this.selectedAddressId = this.draftAddressId;
                 this.modal = false;
             },
+            async removeAddress(id) {
+                if (!window.confirm('Delete this delivery address?')) return;
+                const response = await fetch(this.addressDeleteUrl.replace('__ADDRESS__', id), {
+                    method: 'DELETE', headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json' },
+                });
+                if (!response.ok) { this.notice = 'Could not delete this address.'; return; }
+                this.delivery_addresses = this.delivery_addresses.filter(address => address.delivery_id !== id);
+                if (this.selectedAddressId === id) this.selectedAddressId = this.delivery_addresses[0]?.delivery_id ?? null;
+                this.draftAddressId = this.selectedAddressId;
+            },
             get subtotal() { return this.cart_items.reduce((sum, cart_item) => sum + cart_item.product.price * cart_item.quantity, 0) },
             get totalQuantity() { return this.cart_items.reduce((sum, cart_item) => sum + cart_item.quantity, 0) },
-            get shippingAmount() { return this.cart_items.length ? this.shipping : 0 },
+            get shippingAmount() { return 0 },
             placeOrder() {
-                // ส่ง delivery_address.id และ payment.method ไป CheckoutController; server ต้องคำนวณ unit_price/shipping/amount
-                this.notice = 'Checkout is not connected to order and payment services yet.';
+                if (!this.selectedAddress || (this.pay === 'card' && !this.selectedCardToken)) {
+                    this.notice = 'Select a delivery address and, when paying by card, a payment card to continue.';
+                    return;
+                }
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = @js(route('checkout.place'));
+                const methods = { card: 'CREDIT_CARD', qr: 'PROMPTPAY', cod: 'CASH_ON_DELIVERY' };
+                const fields = { _token: @js(csrf_token()), delivery_id: this.selectedAddressId, payment_method: methods[this.pay], card_token: this.selectedCardToken ?? '' };
+                Object.entries(fields).forEach(([name, value]) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden'; input.name = name; input.value = value; form.appendChild(input);
+                });
+                document.body.appendChild(form);
+                form.submit();
             }
         }"
     >
@@ -60,7 +87,7 @@
                 </div>
                 <template x-if="cart_items.length">
                     <ul class="divide-y divide-mist">
-                        <template x-for="cart_item in cart_items" :key="[cart_item.product_id, cart_item.color, cart_item.tension ?? 0].join('|')">
+                        <template x-for="cart_item in cart_items" :key="[cart_item.product_id, cart_item.color].join('|')">
                             <li class="flex gap-4 py-5 sm:gap-6">
                                 <div class="size-28 shrink-0 overflow-hidden rounded-xl bg-white sm:size-36 xl:size-40">
                                     <template x-if="cart_item.product.image">
@@ -69,7 +96,7 @@
                                 </div>
                                 <div class="flex min-w-0 flex-1 flex-col justify-center">
                                     <p class="text-xl font-semibold text-ink sm:text-2xl" x-text="cart_item.product.name"></p>
-                                    <p class="mt-2 text-sm text-muted sm:text-base" x-text="'Color: ' + cart_item.color + (cart_item.tension ? ' · Tension: ' + cart_item.tension + ' lbs' : '')"></p>
+                                    <p class="mt-2 text-sm text-muted sm:text-base" x-text="'Color: ' + cart_item.color + (cart_item.racket_tension ? ' · Tension: ' + cart_item.racket_tension + ' lbs' : '')"></p>
                                     <p class="mt-1 text-sm text-muted sm:text-base">Quantity: <span x-text="cart_item.quantity"></span></p>
                                     <p class="mt-3 text-lg font-bold text-brand sm:text-xl" x-text="'฿' + (cart_item.product.price * cart_item.quantity).toFixed(2)"></p>
                                 </div>
@@ -115,16 +142,16 @@
                     </div>
 
                     <div x-show="pay === 'card'" x-cloak class="mt-5 space-y-3 rounded-xl bg-page p-4">
-                        <template x-for="credit_debit_card in credit_debit_cards" :key="credit_debit_card.customer_id + ':' + credit_debit_card.number">
+                        <template x-for="credit_debit_card in credit_debit_cards" :key="credit_debit_card.user_id + ':' + credit_debit_card.card_no">
                             <label class="flex cursor-pointer items-center gap-3 text-base sm:text-lg">
-                                <input type="radio" name="card_id" :value="credit_debit_card.number" class="size-5 cursor-pointer text-ink">
-                                <span x-text="'Card ending in ' + String(credit_debit_card.number).slice(-4) + ' · Expires ' + credit_debit_card.expiry_date"></span>
+                                <input type="radio" name="card_token" :value="cardTokens[credit_debit_card.card_no]" x-model="selectedCardToken" class="size-5 cursor-pointer text-ink">
+                                <span x-text="'Card ending in ' + String(credit_debit_card.card_no).slice(-4) + ' · Expires ' + credit_debit_card.expiry_date"></span>
                             </label>
                         </template>
                         <p x-show="!credit_debit_cards.length" class="text-sm text-muted">No saved payment methods.</p>
                         <a href="{{ route('payment-method.create') }}" class="inline-flex items-center gap-2 rounded-lg border border-ink bg-white px-4 py-2 text-sm font-medium text-ink transition hover:bg-mist">+ Pay with new card</a>
                     </div>
-                    <p x-show="pay === 'qr'" x-cloak class="mt-5 rounded-xl bg-page p-4 text-sm text-muted sm:text-base">A PromptPay QR code will be shown after you place the order.</p>
+                    <p x-show="pay === 'qr'" x-cloak class="mt-5 rounded-xl bg-page p-4 text-sm text-muted sm:text-base">Your PromptPay payment reference will be recorded when the order is placed.</p>
                     <p x-show="pay === 'cod'" x-cloak class="mt-5 rounded-xl bg-page p-4 text-sm text-muted sm:text-base">Pay the courier when your order arrives.</p>
                 </section>
 
@@ -132,12 +159,12 @@
                     <h2 class="text-xl font-bold text-ink sm:text-2xl">Order Summary</h2>
                     <dl class="mt-4 space-y-3 text-base sm:text-lg">
                         <div class="flex justify-between gap-4 text-muted"><dt>Merchandise Subtotal (<span x-text="totalQuantity"></span> items)</dt><dd class="shrink-0 font-semibold text-ink" x-text="'฿' + subtotal.toFixed(2)"></dd></div>
-                        <div class="flex justify-between gap-4 text-muted"><dt>Shipping</dt><dd class="shrink-0 font-semibold text-ink" x-text="shippingAmount === null ? 'Calculated by the server' : '฿' + shippingAmount.toFixed(2)"></dd></div>
-                        <div class="flex justify-between gap-4 border-t border-mist pt-4 text-lg font-bold text-ink sm:text-xl"><dt>Total Payment</dt><dd class="shrink-0 text-brand" x-text="shippingAmount === null ? '—' : '฿' + (subtotal + shippingAmount).toFixed(2)"></dd></div>
+                        <div class="flex justify-between gap-4 text-muted"><dt>Shipping</dt><dd class="shrink-0 font-semibold text-ink">฿0.00</dd></div>
+                        <div class="flex justify-between gap-4 border-t border-mist pt-4 text-lg font-bold text-ink sm:text-xl"><dt>Total Payment</dt><dd class="shrink-0 text-brand" x-text="'฿' + (subtotal + shippingAmount).toFixed(2)"></dd></div>
                     </dl>
 
                     <p x-show="notice" x-text="notice" role="status" class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"></p>
-                    <button type="button" @click="placeOrder()" :disabled="!cart_items.length || shippingAmount === null || !selectedAddress" class="mt-6 w-full cursor-pointer rounded-xl bg-ink px-8 py-4 text-lg font-semibold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40 sm:text-xl">
+                    <button type="button" @click="placeOrder()" :disabled="!cart_items.length || !selectedAddress || (pay === 'card' && !selectedCardToken)" class="mt-6 w-full cursor-pointer rounded-xl bg-ink px-8 py-4 text-lg font-semibold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40 sm:text-xl">
                         Place Order
                     </button>
                 </section>
@@ -155,14 +182,14 @@
                     <button type="button" @click="modal = false" aria-label="Close" class="text-3xl leading-none">×</button>
                 </div>
                 <ul x-show="delivery_addresses.length" class="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
-                    <template x-for="delivery_address in delivery_addresses" :key="delivery_address.id">
+                    <template x-for="delivery_address in delivery_addresses" :key="delivery_address.delivery_id">
                         <li>
                             <div
                                 class="flex items-start gap-3 rounded-xl border p-4 transition"
-                                :class="draftAddressId === delivery_address.id ? 'border-brand bg-sky-50 ring-1 ring-brand' : 'border-mist'"
+                                :class="draftAddressId === delivery_address.delivery_id ? 'border-brand bg-sky-50 ring-1 ring-brand' : 'border-mist'"
                             >
                                 <label class="flex min-w-0 flex-1 cursor-pointer gap-3">
-                                    <input type="radio" name="delivery_address_id" :value="delivery_address.id" x-model.number="draftAddressId" class="mt-1 shrink-0 cursor-pointer text-brand">
+                                    <input type="radio" name="delivery_address_id" :value="delivery_address.delivery_id" x-model.number="draftAddressId" class="mt-1 shrink-0 cursor-pointer text-brand">
                                     <span class="min-w-0 flex-1">
                                         <span class="flex flex-wrap items-center gap-x-2 text-base font-semibold text-ink">
                                             <span x-text="delivery_address.name"></span>
@@ -172,12 +199,12 @@
                                     </span>
                                 </label>
                                 <div class="flex shrink-0 flex-col items-end gap-2">
-                                    <a :href="'{{ url('/edit-address') }}/' + delivery_address.id" class="cursor-pointer text-sm font-medium text-brand underline underline-offset-2 hover:text-ink">
+                                    <a :href="'{{ url('/edit-address') }}/' + delivery_address.delivery_id" class="cursor-pointer text-sm font-medium text-brand underline underline-offset-2 hover:text-ink">
                                         Edit
                                     </a>
                                     <button
                                         type="button"
-                                        @click="removeAddress(delivery_address.id)"
+                                        @click="removeAddress(delivery_address.delivery_id)"
                                         :aria-label="'Delete address for ' + delivery_address.name"
                                         title="Delete this address"
                                         class="group grid size-8 cursor-pointer place-items-center rounded-lg text-red-400 transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
@@ -197,7 +224,7 @@
                         <span class="text-xl leading-none" aria-hidden="true">+</span>
                         Add new address
                     </a>
-                    <button type="button" @click="confirmAddress()" :disabled="!delivery_addresses.some(delivery_address => delivery_address.id === draftAddressId)" class="rounded-lg bg-ink px-4 py-3 font-semibold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
+                    <button type="button" @click="confirmAddress()" :disabled="!delivery_addresses.some(delivery_address => delivery_address.delivery_id === draftAddressId)" class="rounded-lg bg-ink px-4 py-3 font-semibold text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
                         Save
                     </button>
                 </div>

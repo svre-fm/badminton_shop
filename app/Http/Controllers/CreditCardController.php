@@ -19,7 +19,7 @@ class CreditCardController extends Controller
 
     public function create()
     {
-        return view('credit-cards.create');
+        return view('shop.add-credit-card');
     }
 
     public function store(Request $request)
@@ -63,7 +63,7 @@ class CreditCardController extends Controller
         abort_unless($card, 404);
         $card->delete();
 
-        return redirect()->route('credit-cards.index')->with('status', 'Card removed.');
+        return redirect()->route('checkout')->with('status', 'Card removed.');
     }
 
     private function tokenFor(Request $request, string $cardNumber): string

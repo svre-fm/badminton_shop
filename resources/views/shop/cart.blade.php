@@ -4,32 +4,46 @@
     <div
         class="mt-6"
         x-data="{
-            cart_items: @js($cart_items ?? []),
+            cartItems: @js($cartItems ?? []),
             notice: '',
-            init() { this.cart_items = this.cart_items.map(cart_item => ({ ...cart_item, checked: true })) },
-            get all() { return this.cart_items.length > 0 && this.cart_items.every(cart_item => cart_item.checked) },
-            set all(value) { this.cart_items.forEach(cart_item => cart_item.checked = value) },
-            get picked() { return this.cart_items.filter(cart_item => cart_item.checked) },
+            busy: false,
+            csrf: @js(csrf_token()),
+            updateUrl: @js(route('cart.update', ['productId' => '__PRODUCT__'])),
+            removeUrl: @js(route('cart.destroy', ['productId' => '__PRODUCT__'])),
+            checkoutItemsUrl: @js(route('checkout.items')),
+            init() { this.cartItems = this.cartItems.map(cartItem => ({ ...cartItem, checked: true })) },
+            get all() { return this.cartItems.length > 0 && this.cartItems.every(cartItem => cartItem.checked) },
+            set all(value) { this.cartItems.forEach(cartItem => cartItem.checked = value) },
+            get picked() { return this.cartItems.filter(cartItem => cartItem.checked) },
             get total() { return this.picked.reduce((sum, cart_item) => sum + cart_item.product.price * cart_item.quantity, 0) },
             get totalQuantity() { return this.picked.reduce((sum, cart_item) => sum + cart_item.quantity, 0) },
-            key(cart_item) { return [cart_item.customer_id, cart_item.product_id, cart_item.color, cart_item.tension ?? 0].join('|') },
-            save() {
-                // TODO: ส่ง cart_item.customer_id/product_id/color/tension/quantity ไป CartController
-                // ให้ server ตรวจ customer ownership, product_variant.stock และ cart_item.tension ก่อน update/delete
-                this.notice = 'Cart changes are not saved until the CartController is connected.';
+            key(cartItem) { return [cartItem.customer_id, cartItem.product_id, cartItem.color].join('|') },
+            async request(url, method, data = {}) {
+                const response = await fetch(url, { method, headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || 'Could not update your cart.');
             },
-            remove(cart_item) {
-                this.cart_items = this.cart_items.filter(item => this.key(item) !== this.key(cart_item));
-                this.save();
+            async remove(cartItem) {
+                if (this.busy) return;
+                this.busy = true;
+                try { await this.request(this.removeUrl.replace('__PRODUCT__', cartItem.product_id), 'DELETE', { color: cartItem.color }); this.cartItems = this.cartItems.filter(item => this.key(item) !== this.key(cartItem)); }
+                catch (error) { this.notice = error.message; }
+                finally { this.busy = false; }
             },
-            changeQuantity(cart_item, amount) {
-                cart_item.quantity = Math.max(1, Number(cart_item.quantity) + amount);
-                this.save();
+            async changeQuantity(cartItem, amount) {
+                const quantity = Math.max(1, Number(cartItem.quantity) + amount);
+                if (this.busy) return;
+                this.busy = true;
+                try { await this.request(this.updateUrl.replace('__PRODUCT__', cartItem.product_id), 'PATCH', { color: cartItem.color, quantity }); cartItem.quantity = quantity; }
+                catch (error) { this.notice = error.message; }
+                finally { this.busy = false; }
             },
-            purchase() {
+            async purchase() {
                 if (!this.picked.length) return;
-                // CheckoutController ต้องอ่าน cart_item ที่เลือกจาก server และคำนวณจาก product.price ใหม่
-                window.location.href = @js(route('checkout'));
+                this.busy = true;
+                try {
+                    await this.request(this.checkoutItemsUrl, 'POST', { items: this.picked.map(item => ({ product_id: item.product_id, color: item.color, selected: true })) });
+                    window.location.assign(@js(route('checkout')));
+                } catch (error) { this.notice = error.message; this.busy = false; }
             }
         }"
     >
@@ -39,7 +53,7 @@
             type="button"
             @click="all = !all"
             :aria-pressed="all"
-            :disabled="!cart_items.length"
+            :disabled="!cartItems.length"
             class="mt-5 inline-flex items-center rounded-full border border-ink px-5 py-2 text-sm font-medium text-ink transition hover:bg-ink hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
             <span x-text="all ? 'Deselect all' : 'Select all'"></span>
@@ -47,9 +61,9 @@
 
         <p x-show="notice" x-text="notice" role="status" class="mt-4 text-sm font-medium text-red-700"></p>
 
-        <template x-if="cart_items.length">
+        <template x-if="cartItems.length">
             <ul class="mt-4 divide-y divide-mist border-y border-mist">
-                <template x-for="cart_item in cart_items" :key="key(cart_item)">
+                <template x-for="cart_item in cartItems" :key="key(cart_item)">
                     <li class="flex flex-wrap items-center gap-4 py-6 sm:gap-6">
                         <input type="checkbox" x-model="cart_item.checked" class="size-5 shrink-0 rounded border-ink text-ink sm:size-6" :aria-label="'Select ' + cart_item.product.name">
                         <div class="grid size-24 shrink-0 place-items-center rounded-lg bg-tile sm:size-32" aria-hidden="true">
@@ -59,7 +73,7 @@
                         </div>
                         <div class="min-w-40 flex-1">
                             <h2 class="text-xl font-bold sm:text-2xl" x-text="cart_item.product.name"></h2>
-                            <p class="mt-2 text-xs text-muted sm:text-sm" x-text="'Color: ' + cart_item.color + (cart_item.tension ? ' · Tension: ' + cart_item.tension + ' lbs' : '')"></p>
+                            <p class="mt-2 text-xs text-muted sm:text-sm" x-text="'Color: ' + cart_item.color + (cart_item.racket_tension ? ' · Tension: ' + cart_item.racket_tension + ' lbs' : '')"></p>
                             <div class="mt-3 flex items-center gap-3">
                                 <button type="button" @click="changeQuantity(cart_item, -1)" class="grid size-7 place-items-center rounded-full bg-brand text-white" aria-label="Decrease">−</button>
                                 <span class="w-6 text-center text-lg" x-text="cart_item.quantity"></span>
@@ -80,14 +94,14 @@
             </ul>
         </template>
 
-        <p x-show="!cart_items.length" x-cloak class="py-10 text-muted">
+        <p x-show="!cartItems.length" x-cloak class="py-10 text-muted">
             Your cart is empty. <a href="{{ route('shop.index') }}" class="text-brand underline">Browse products</a>
         </p>
 
-        <div x-show="cart_items.length" x-cloak class="mt-8 flex flex-wrap items-center justify-end gap-5">
+        <div x-show="cartItems.length" x-cloak class="mt-8 flex flex-wrap items-center justify-end gap-5">
             <span class="text-xl text-muted">(Total <span x-text="totalQuantity"></span> items)</span>
             <span class="text-3xl font-bold text-brand" x-text="'฿' + total.toFixed(2)"></span>
-            <button type="button" @click="purchase()" :disabled="!picked.length" class="rounded-lg bg-ink px-8 py-3 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" @click="purchase()" :disabled="!picked.length || busy" class="rounded-lg bg-ink px-8 py-3 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
                 Purchase
             </button>
         </div>
