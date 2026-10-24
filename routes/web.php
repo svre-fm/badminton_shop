@@ -40,10 +40,14 @@ Route::redirect('/dashboard', '/home');
 
 Route::middleware('auth')->group(function () {
     Route::redirect('/cart', '/cart_item')->name('cart.legacy');
-    Route::get('/cart_item', [CartController::class, 'index'])->name('cart');
-    Route::post('/cart_item', [CartController::class, 'store'])->name('cart.store');
-    Route::patch('/cart_item/{productId}', [CartController::class, 'update'])->whereNumber('productId')->name('cart.update');
-    Route::delete('/cart_item/{productId}', [CartController::class, 'destroy'])->whereNumber('productId')->name('cart.destroy');
+Route::get('/cart_item', [CartController::class, 'index'])->name('cart');
+Route::post('/cart_item', [CartController::class, 'store'])->name('cart.store');
+Route::patch('/cart_item/{productId}', [CartController::class, 'update'])
+    ->whereNumber('productId')
+    ->name('cart.update');
+Route::delete('/cart_item/{productId}', [CartController::class, 'destroy'])
+    ->whereNumber('productId')
+    ->name('cart.destroy');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout/items', [CheckoutController::class, 'selectItems'])->name('checkout.items');

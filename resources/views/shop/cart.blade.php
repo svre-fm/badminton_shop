@@ -1,49 +1,98 @@
 <x-layouts.shop title="My cart">
-    {{-- CartController ส่ง cart_item พร้อม relation product และ product_variant; ใช้ชื่อคอลัมน์ใน EER โดยตรง --}}
-    {{-- tension ยังขาดจาก diagram ล่าสุด แต่ตามข้อตกลงต้องเพิ่มเป็น cart_item.tension เพื่อแยกรายการที่เลือกความตึงต่างกัน --}}
     <div
         class="mt-6"
         x-data="{
-            cartItems: @js($cartItems ?? []),
+            cart_items: @js($cartItems ?? []),
             notice: '',
-            busy: false,
-            csrf: @js(csrf_token()),
-            updateUrl: @js(route('cart.update', ['productId' => '__PRODUCT__'])),
-            removeUrl: @js(route('cart.destroy', ['productId' => '__PRODUCT__'])),
-            checkoutItemsUrl: @js(route('checkout.items')),
-            init() { this.cartItems = this.cartItems.map(cartItem => ({ ...cartItem, checked: true })) },
-            get all() { return this.cartItems.length > 0 && this.cartItems.every(cartItem => cartItem.checked) },
-            set all(value) { this.cartItems.forEach(cartItem => cartItem.checked = value) },
-            get picked() { return this.cartItems.filter(cartItem => cartItem.checked) },
-            get total() { return this.picked.reduce((sum, cart_item) => sum + cart_item.product.price * cart_item.quantity, 0) },
-            get totalQuantity() { return this.picked.reduce((sum, cart_item) => sum + cart_item.quantity, 0) },
-            key(cartItem) { return [cartItem.customer_id, cartItem.product_id, cartItem.color].join('|') },
-            async request(url, method, data = {}) {
-                const response = await fetch(url, { method, headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-                if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || 'Could not update your cart.');
+            updating: {},
+            init() {
+                this.cart_items = this.cart_items.map(cart_item => ({ ...cart_item, checked: true }));
             },
-            async remove(cartItem) {
-                if (this.busy) return;
-                this.busy = true;
-                try { await this.request(this.removeUrl.replace('__PRODUCT__', cartItem.product_id), 'DELETE', { color: cartItem.color }); this.cartItems = this.cartItems.filter(item => this.key(item) !== this.key(cartItem)); }
-                catch (error) { this.notice = error.message; }
-                finally { this.busy = false; }
+            get all() { return this.cart_items.length > 0 && this.cart_items.every(cart_item => cart_item.checked) },
+            set all(value) { this.cart_items.forEach(cart_item => cart_item.checked = value) },
+            get picked() { return this.cart_items.filter(cart_item => cart_item.checked) },
+            get total() { return this.picked.reduce((sum, cart_item) => sum + Number(cart_item.product.price) * Number(cart_item.quantity), 0) },
+            get totalQuantity() { return this.picked.reduce((sum, cart_item) => sum + Number(cart_item.quantity), 0) },
+            key(cart_item) {
+                return [cart_item.customer_id, cart_item.product_id, cart_item.color, cart_item.racket_tension ?? cart_item.tension ?? 0].join('|');
             },
-            async changeQuantity(cartItem, amount) {
-                const quantity = Math.max(1, Number(cartItem.quantity) + amount);
-                if (this.busy) return;
-                this.busy = true;
-                try { await this.request(this.updateUrl.replace('__PRODUCT__', cartItem.product_id), 'PATCH', { color: cartItem.color, quantity }); cartItem.quantity = quantity; }
-                catch (error) { this.notice = error.message; }
-                finally { this.busy = false; }
-            },
-            async purchase() {
-                if (!this.picked.length) return;
-                this.busy = true;
+            async changeQuantity(cart_item, amount) {
+                const itemKey = this.key(cart_item);
+                if (this.updating[itemKey]) return;
+
+                const previousQuantity = Number(cart_item.quantity);
+                const quantity = Math.max(1, previousQuantity + amount);
+                if (quantity === previousQuantity) return;
+
+                this.updating[itemKey] = true;
+                this.notice = '';
+
                 try {
-                    await this.request(this.checkoutItemsUrl, 'POST', { items: this.picked.map(item => ({ product_id: item.product_id, color: item.color, selected: true })) });
-                    window.location.assign(@js(route('checkout')));
-                } catch (error) { this.notice = error.message; this.busy = false; }
+                    const response = await fetch(@js(url('/cart_item')) + '/' + encodeURIComponent(cart_item.product_id), {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': @js(csrf_token()),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            quantity: quantity,
+                            color: cart_item.color,
+                        }),
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        throw new Error(data.message || Object.values(data.errors ?? {}).flat()[0] || 'Could not update the cart.');
+                    }
+
+                    cart_item.quantity = data.quantity ?? quantity;
+                } catch (error) {
+                    this.notice = error.message || 'Could not update the cart.';
+                } finally {
+                    this.updating[itemKey] = false;
+                }
+            },
+            async remove(cart_item) {
+                const itemKey = this.key(cart_item);
+                if (this.updating[itemKey]) return;
+
+                this.updating[itemKey] = true;
+                this.notice = '';
+
+                try {
+                    const response = await fetch(@js(url('/cart_item')) + '/' + encodeURIComponent(cart_item.product_id), {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': @js(csrf_token()),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({
+                            color: cart_item.color,
+                        }),
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        throw new Error(data.message || 'Could not remove the item.');
+                    }
+
+                    this.cart_items = this.cart_items.filter(item => this.key(item) !== itemKey);
+                } catch (error) {
+                    this.notice = error.message || 'Could not remove the item.';
+                } finally {
+                    this.updating[itemKey] = false;
+                }
+            },
+            purchase() {
+                if (!this.picked.length) return;
+                // ถ้ามี checkout.select แล้ว ให้ใช้ form ด้านล่างแทน
+                window.location.href = @js(route('checkout'));
             }
         }"
     >
@@ -53,7 +102,7 @@
             type="button"
             @click="all = !all"
             :aria-pressed="all"
-            :disabled="!cartItems.length"
+            :disabled="!cart_items.length"
             class="mt-5 inline-flex items-center rounded-full border border-ink px-5 py-2 text-sm font-medium text-ink transition hover:bg-ink hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
         >
             <span x-text="all ? 'Deselect all' : 'Select all'"></span>
@@ -61,9 +110,9 @@
 
         <p x-show="notice" x-text="notice" role="status" class="mt-4 text-sm font-medium text-red-700"></p>
 
-        <template x-if="cartItems.length">
+        <template x-if="cart_items.length">
             <ul class="mt-4 divide-y divide-mist border-y border-mist">
-                <template x-for="cart_item in cartItems" :key="key(cart_item)">
+                <template x-for="cart_item in cart_items" :key="key(cart_item)">
                     <li class="flex flex-wrap items-center gap-4 py-6 sm:gap-6">
                         <input type="checkbox" x-model="cart_item.checked" class="size-5 shrink-0 rounded border-ink text-ink sm:size-6" :aria-label="'Select ' + cart_item.product.name">
                         <div class="grid size-24 shrink-0 place-items-center rounded-lg bg-tile sm:size-32" aria-hidden="true">
@@ -73,12 +122,12 @@
                         </div>
                         <div class="min-w-40 flex-1">
                             <h2 class="text-xl font-bold sm:text-2xl" x-text="cart_item.product.name"></h2>
-                            <p class="mt-2 text-xs text-muted sm:text-sm" x-text="'Color: ' + cart_item.color + (cart_item.racket_tension ? ' · Tension: ' + cart_item.racket_tension + ' lbs' : '')"></p>
+                            <p class="mt-2 text-xs text-muted sm:text-sm" x-text="'Color: ' + cart_item.color + ((cart_item.racket_tension || cart_item.tension) ? ' · Tension: ' + (cart_item.racket_tension || cart_item.tension) + ' lbs' : '')"></p>
                             <div class="mt-3 flex items-center gap-3">
-                                <button type="button" @click="changeQuantity(cart_item, -1)" class="grid size-7 place-items-center rounded-full bg-brand text-white" aria-label="Decrease">−</button>
+                                <button type="button" @click="changeQuantity(cart_item, -1)" :disabled="updating[key(cart_item)]" class="grid size-7 place-items-center rounded-full bg-brand text-white disabled:opacity-50" aria-label="Decrease">−</button>
                                 <span class="w-6 text-center text-lg" x-text="cart_item.quantity"></span>
-                                <button type="button" @click="changeQuantity(cart_item, 1)" class="grid size-7 place-items-center rounded-full bg-brand text-white" aria-label="Increase">+</button>
-                                <button type="button" @click="remove(cart_item)" class="ml-2 text-sm text-muted hover:text-ink sm:hidden">Remove</button>
+                                <button type="button" @click="changeQuantity(cart_item, 1)" :disabled="updating[key(cart_item)]" class="grid size-7 place-items-center rounded-full bg-brand text-white disabled:opacity-50" aria-label="Increase">+</button>
+                                <button type="button" @click="remove(cart_item)" :disabled="updating[key(cart_item)]" class="ml-2 text-sm text-muted hover:text-ink sm:hidden">Remove</button>
                             </div>
                         </div>
                         <div class="ml-auto min-w-28 text-right">
@@ -87,21 +136,21 @@
                                 <span>each</span>
                             </p>
                             <p class="text-lg font-bold text-brand sm:text-xl" x-text="'฿' + new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2 }).format(cart_item.product.price * cart_item.quantity)"></p>
-                            <button type="button" @click="remove(cart_item)" class="mt-2 hidden text-sm text-muted hover:text-ink sm:inline">Remove</button>
+                            <button type="button" @click="remove(cart_item)" :disabled="updating[key(cart_item)]" class="mt-2 hidden text-sm text-muted hover:text-ink sm:inline">Remove</button>
                         </div>
                     </li>
                 </template>
             </ul>
         </template>
 
-        <p x-show="!cartItems.length" x-cloak class="py-10 text-muted">
+        <p x-show="!cart_items.length" x-cloak class="py-10 text-muted">
             Your cart is empty. <a href="{{ route('shop.index') }}" class="text-brand underline">Browse products</a>
         </p>
 
-        <div x-show="cartItems.length" x-cloak class="mt-8 flex flex-wrap items-center justify-end gap-5">
+        <div x-show="cart_items.length" x-cloak class="mt-8 flex flex-wrap items-center justify-end gap-5">
             <span class="text-xl text-muted">(Total <span x-text="totalQuantity"></span> items)</span>
             <span class="text-3xl font-bold text-brand" x-text="'฿' + total.toFixed(2)"></span>
-            <button type="button" @click="purchase()" :disabled="!picked.length || busy" class="rounded-lg bg-ink px-8 py-3 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" @click="purchase()" :disabled="!picked.length" class="rounded-lg bg-ink px-8 py-3 text-white transition hover:bg-brand disabled:cursor-not-allowed disabled:opacity-40">
                 Purchase
             </button>
         </div>

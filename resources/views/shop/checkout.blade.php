@@ -1,6 +1,6 @@
 @php
     // ใช้ delivery_address.id/name/phone/address, cart_item + product และ credit_debit_card ตาม EER
-    // orders.shipping ต้องคำนวณจาก Backend; diagram ไม่มี default address และ orders ไม่มี FK ไป delivery_address
+    // diagram ไม่มี default address และ orders ไม่มี FK ไป delivery_address
     $delivery_addresses = collect($deliveryAddresses ?? [])->values()->all();
     $cart_items = collect($cartItems ?? [])->values()->all();
     $credit_debit_cards = collect($creditCards ?? [])->values()->all();
@@ -53,7 +53,6 @@
             },
             get subtotal() { return this.cart_items.reduce((sum, cart_item) => sum + cart_item.product.price * cart_item.quantity, 0) },
             get totalQuantity() { return this.cart_items.reduce((sum, cart_item) => sum + cart_item.quantity, 0) },
-            get shippingAmount() { return 0 },
             placeOrder() {
                 if (!this.selectedAddress || (this.pay === 'card' && !this.selectedCardToken)) {
                     this.notice = 'Select a delivery address and, when paying by card, a payment card to continue.';
@@ -158,9 +157,14 @@
                 <section class="rounded-2xl border border-mist bg-page p-5 sm:p-7">
                     <h2 class="text-xl font-bold text-ink sm:text-2xl">Order Summary</h2>
                     <dl class="mt-4 space-y-3 text-base sm:text-lg">
-                        <div class="flex justify-between gap-4 text-muted"><dt>Merchandise Subtotal (<span x-text="totalQuantity"></span> items)</dt><dd class="shrink-0 font-semibold text-ink" x-text="'฿' + subtotal.toFixed(2)"></dd></div>
-                        <div class="flex justify-between gap-4 text-muted"><dt>Shipping</dt><dd class="shrink-0 font-semibold text-ink">฿0.00</dd></div>
-                        <div class="flex justify-between gap-4 border-t border-mist pt-4 text-lg font-bold text-ink sm:text-xl"><dt>Total Payment</dt><dd class="shrink-0 text-brand" x-text="'฿' + (subtotal + shippingAmount).toFixed(2)"></dd></div>
+                        <div class="flex justify-between gap-4 text-muted">
+                            <dt>Merchandise Subtotal (<span x-text="totalQuantity"></span> items)</dt>
+                            <dd class="shrink-0 font-semibold text-ink" x-text="'฿' + subtotal.toFixed(2)"></dd>
+                        </div>
+                        <div class="flex justify-between gap-4 border-t border-mist pt-4 text-lg font-bold text-ink sm:text-xl">
+                            <dt>Total Payment</dt>
+                            <dd class="shrink-0 text-brand" x-text="'฿' + subtotal.toFixed(2)"></dd>
+                        </div>
                     </dl>
 
                     <p x-show="notice" x-text="notice" role="status" class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"></p>
@@ -171,9 +175,7 @@
             </div>
         </div>
 
-        {{-- ใช้ delivery_address.id/customer_id/name/phone/address ตาม EER; ตรวจสิทธิ์เจ้าของทุก request
-             ปุ่มลบเรียก removeAddress() ซึ่งยังไม่มี implementation ให้ทีม Backend เชื่อม DELETE endpoint
-             EER orders ยังไม่มี FK/snapshot ของที่อยู่ จึงต้องตกลงการเก็บข้อมูลที่อยู่ใน order ก่อนทำจริง --}}
+        {{-- ใช้ delivery_address.id/customer_id/name/phone/address ตาม EER; ตรวจสิทธิ์เจ้าของทุก request --}}
         <div x-show="modal" x-cloak @keydown.escape.window="modal = false"
              class="fixed inset-0 z-40 flex justify-end bg-black/40" role="dialog" aria-modal="true" aria-labelledby="addr-title">
             <div @click.outside="modal = false" class="flex h-full max-h-screen w-full max-w-md flex-col bg-white shadow-xl">
@@ -231,4 +233,4 @@
             </div>
         </div>
     </div>
-</x-layouts.shop>
+</x-layouts.shop>   

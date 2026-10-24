@@ -29,11 +29,13 @@ class CartController extends Controller
             ->where('product_id', $validated['product_id'])
             ->where('color', $validated['color'])
             ->firstOrFail();
+
         $user = $request->user();
         $cartItem = $user->cartItems()
             ->where('product_id', $variant->product_id)
             ->where('color', $variant->color)
             ->first();
+
         $quantity = ($cartItem?->quantity ?? 0) + $validated['quantity'];
 
         if ($quantity > $variant->stock) {
@@ -66,7 +68,7 @@ class CartController extends Controller
         return response()->json(['message' => 'Product added to cart.']);
     }
 
-    public function update(Request $request, int $productId)
+    public function update(Request $request, int $productId): JsonResponse
     {
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1'],
@@ -77,15 +79,19 @@ class CartController extends Controller
             ->where('product_id', $productId)
             ->where('color', $validated['color'])
             ->firstOrFail();
+
         $variant = productvariant::query()
             ->where('product_id', $productId)
             ->where('color', $validated['color'])
             ->firstOrFail();
 
         if ($validated['quantity'] > $variant->stock) {
-            return back()->withErrors([
-                'quantity' => "Only {$variant->stock} item(s) are currently in stock.",
-            ]);
+            $message = "Only {$variant->stock} item(s) are currently in stock.";
+
+            return response()->json([
+                'message' => $message,
+                'errors' => ['quantity' => [$message]],
+            ], 422);
         }
 
         cart_item::query()
@@ -94,10 +100,13 @@ class CartController extends Controller
             ->where('color', $validated['color'])
             ->update(['quantity' => $validated['quantity']]);
 
-        return back()->with('status', 'Cart updated.');
+        return response()->json([
+            'message' => 'Cart updated.',
+            'quantity' => $validated['quantity'],
+        ]);
     }
 
-    public function destroy(Request $request, int $productId)
+    public function destroy(Request $request, int $productId): JsonResponse
     {
         $validated = $request->validate([
             'color' => ['required', 'string', 'max:50'],
@@ -109,6 +118,6 @@ class CartController extends Controller
             ->firstOrFail()
             ->delete();
 
-        return redirect()->route('cart')->with('status', 'Product removed from cart.');
+        return response()->json(['message' => 'Product removed from cart.']);
     }
 }
