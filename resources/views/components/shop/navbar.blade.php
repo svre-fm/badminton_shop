@@ -14,9 +14,9 @@
 @endphp
 
 <header class="relative z-30 border-b border-mist bg-white shadow-sm">
-    <div class="mx-auto grid min-h-20 w-full max-w-screen-2xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-4 py-3 sm:min-h-24 sm:gap-4 sm:px-8 lg:px-12">
+    <div class="grid min-h-16 w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4 lg:gap-6 px-4 sm:px-6 lg:px-20">
         {{-- Left: nav --}}
-        <nav class="flex items-center gap-1 text-sm font-medium sm:gap-7 sm:text-base lg:gap-9" aria-label="Main navigation">
+        <nav class="flex items-center justify-start gap-1 text-sm font-medium sm:gap-7 sm:text-base lg:gap-9" aria-label="Main navigation">
             <a href="{{ route('home') }}"
                @class([
                    'hidden rounded-full px-3 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:inline-flex sm:px-4',
@@ -54,7 +54,7 @@
 
         {{-- Center: logo --}}
         <a href="{{ route('home') }}" class="flex min-w-0 justify-self-center rounded-lg p-1 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2" aria-label="Badminton store">
-            <img src="{{ asset('images/store-logo.png') }}" alt="Badminton store" class="h-12 w-auto max-w-32 object-contain sm:h-14 sm:max-w-48 lg:h-16 lg:max-w-56">
+            <img src="{{ asset('images/store-logo.png') }}" alt="Badminton store" class="h-12 w-auto max-w-32 object-contain sm:h-14 sm:max-w-48 lg:h-12 lg:max-w-56">
         </a>
 
         {{-- Right: cart + account --}}

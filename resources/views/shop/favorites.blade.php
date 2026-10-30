@@ -26,10 +26,8 @@
                     :price="data_get($product, 'price')"
                     :image="data_get($product, 'image')"
                     :rating="$rating !== null ? round((float) $rating, 1) : null"
-                    :favorited="true"
                     :product-id="data_get($product, 'product_id')"
                     :href="route('shop.product', ['category' => $category, 'product_id' => data_get($product, 'product_id')])"
-                    class="border border-mis"
                     />
             @endforeach
         </div>
