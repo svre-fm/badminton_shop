@@ -1,6 +1,4 @@
 @php
-    // ใช้ delivery_address.id/name/phone/address, cart_item + product และ credit_debit_card ตาม EER
-    // diagram ไม่มี default address และ orders ไม่มี FK ไป delivery_address
     $delivery_addresses = collect($deliveryAddresses ?? [])->values()->all();
     $cart_items = collect($cartItems ?? [])->values()->all();
     $credit_debit_cards = collect($creditCards ?? [])->values()->all();
@@ -20,6 +18,27 @@
             addressDeleteUrl: @js(route('address.destroy', ['address' => '__ADDRESS__'])),
             selectedAddressId: null,
             selectedCardToken: null,
+            all_cart_items: @js($cart_items),
+
+            selected_items: [],
+
+            init() {
+                try {
+                    this.selected_items = JSON.parse(
+                        sessionStorage.getItem('checkout_items') || '[]'
+                    );
+                } catch {
+                    this.selected_items = [];
+                }
+
+                this.cart_items = this.all_cart_items.filter(cartItem =>
+                    this.selected_items.some(selected =>
+                        Number(selected.product_id) === Number(cartItem.product_id) &&
+                        selected.color === cartItem.color &&
+                        Number(selected.racket_tension ?? 0) === Number(cartItem.racket_tension ?? 0)
+                    )
+                );
+            },
             draftAddressId: null,
             cart_items: @js($cart_items),
             notice: '',
@@ -89,8 +108,8 @@
                         <template x-for="cart_item in cart_items" :key="[cart_item.product_id, cart_item.color].join('|')">
                             <li class="flex gap-4 py-5 sm:gap-6">
                                 <div class="size-28 shrink-0 overflow-hidden rounded-xl bg-white sm:size-36 xl:size-40">
-                                    <template x-if="cart_item.product.image">
-                                        <img :src="cart_item.product.image" :alt="cart_item.product.name" class="size-full object-cover">
+                                    <template x-if="cart_item.variantRecord?.image">
+                                        <img :src="cart_item.variantRecord.image" :alt="cart_item.product.name" class="size-full object-cover">
                                     </template>
                                 </div>
                                 <div class="flex min-w-0 flex-1 flex-col justify-center">

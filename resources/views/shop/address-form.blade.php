@@ -43,6 +43,9 @@
                     name="phone"
                     type="tel"
                     autocomplete="tel"
+                    maxlength="10"
+                    pattern="[0-9]{10}"
+                    inputmode="numeric"
                     required
                     value="{{ old('phone', data_get($delivery_address, 'phone')) }}"
                     class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"

@@ -91,7 +91,18 @@
             },
             purchase() {
                 if (!this.picked.length) return;
-                // ถ้ามี checkout.select แล้ว ให้ใช้ form ด้านล่างแทน
+
+                const selectedItems = this.picked.map(item => ({
+                    product_id: item.product_id,
+                    color: item.color,
+                    racket_tension: item.racket_tension ?? null,
+                }));
+
+                sessionStorage.setItem(
+                    'checkout_items',
+                    JSON.stringify(selectedItems)
+                );
+
                 window.location.href = @js(route('checkout'));
             }
         }"
@@ -116,8 +127,8 @@
                     <li class="flex flex-wrap items-center gap-4 py-6 sm:gap-6">
                         <input type="checkbox" x-model="cart_item.checked" class="size-5 shrink-0 rounded border-ink text-ink sm:size-6" :aria-label="'Select ' + cart_item.product.name">
                         <div class="grid size-24 shrink-0 place-items-center rounded-lg bg-tile sm:size-32" aria-hidden="true">
-                            <template x-if="cart_item.product.image">
-                                <img :src="cart_item.product.image" :alt="cart_item.product.name" class="size-full rounded-lg object-cover">
+                            <template x-if="cart_item.variantRecord?.image">
+                                <img :src="cart_item.variantRecord.image" :alt="cart_item.product.name" class="size-full rounded-lg object-cover border-1">
                             </template>
                         </div>
                         <div class="min-w-40 flex-1">

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\orders;
+use App\Models\productvariant;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,10 +14,12 @@ use Illuminate\View\View;
 
 class CheckoutController extends Controller
 {
+    
     public function show(Request $request): View|RedirectResponse
     {
         $user = $request->user();
         $selectedItems = session('checkout.cart_items');
+
         $cartItemsQuery = $user->cartItems()->with('product');
 
         if (is_array($selectedItems)) {
@@ -31,15 +34,31 @@ class CheckoutController extends Controller
         }
 
         $cartItems = $cartItemsQuery->get();
+
         if ($cartItems->isEmpty()) {
-            return redirect()->route('cart')->with('error', 'Add products to your cart before checkout.');
+            return redirect()->route('cart')
+                ->with('error', 'Add products to your cart before checkout.');
+        }
+
+        $variants = productvariant::query()
+            ->whereIn('product_id', $cartItems->pluck('product_id'))
+            ->get()
+            ->keyBy(fn ($variant) => $variant->product_id . '_' . $variant->color);
+
+        foreach ($cartItems as $item) {
+            $item->variantRecord = $variants->get(
+                $item->product_id . '_' . $item->color
+            );
         }
 
         $deliveryAddresses = $user->Delivery_address()->get();
+
         $creditCards = $user->cards()
             ->get()
-            ->filter(fn ($card) => Carbon::parse($card->expiry_date)->endOfMonth()->endOfDay()->isFuture())
+            ->filter(fn ($card) => Carbon::parse($card->expiry_date)
+                ->endOfMonth()->endOfDay()->isFuture())
             ->values();
+
         $cardTokens = $creditCards->mapWithKeys(fn ($card) => [
             $card->card_no => hash_hmac(
                 'sha256',
@@ -48,8 +67,14 @@ class CheckoutController extends Controller
             ),
         ]);
 
-        return view('shop.checkout', compact('cartItems', 'deliveryAddresses', 'creditCards', 'cardTokens'));
+        return view('shop.checkout', compact(
+            'cartItems',
+            'deliveryAddresses',
+            'creditCards',
+            'cardTokens'
+        ));
     }
+
 
     public function selectItems(Request $request)
     {

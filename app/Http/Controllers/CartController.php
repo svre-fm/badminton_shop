@@ -11,7 +11,21 @@ class CartController extends Controller
 {
     public function index(Request $request)
     {
-        $cartItems = $request->user()->cartItems()->with('product')->get();
+        $cartItems = $request->user()
+            ->cartItems()
+            ->with('product')
+            ->get();
+
+        $variants = productvariant::query()
+            ->whereIn('product_id', $cartItems->pluck('product_id'))
+            ->get()
+            ->keyBy(fn ($variant) => $variant->product_id . '_' . $variant->color);
+
+        foreach ($cartItems as $item) {
+            $item->variantRecord = $variants->get(
+                $item->product_id . '_' . $item->color
+            );
+        }
 
         return view('shop.cart', compact('cartItems'));
     }
@@ -54,14 +68,14 @@ class CartController extends Controller
                 ->where('color', $variant->color)
                 ->update([
                     'quantity' => $quantity,
-                    'racket_tension' => $validated['tension'] ?? 0,
+                    'racket_tension' => $validated['tension'] ?? null,
                 ]);
         } else {
             $user->cartItems()->create([
                 'product_id' => $variant->product_id,
                 'color' => $variant->color,
                 'quantity' => $quantity,
-                'racket_tension' => $validated['tension'] ?? 0,
+                'racket_tension' => $validated['tension'] ?? null,
             ]);
         }
 
