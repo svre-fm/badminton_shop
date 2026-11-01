@@ -105,7 +105,7 @@
                 </div>
                 <template x-if="cart_items.length">
                     <ul class="divide-y divide-mist">
-                        <template x-for="cart_item in cart_items" :key="[cart_item.product_id, cart_item.color].join('|')">
+                        <template x-for="cart_item in cart_items" :key="[cart_item.product_id, cart_item.color, cart_item.racket_tension ?? cart_item.tension ?? 0].join('|')">
                             <li class="flex gap-4 py-5 sm:gap-6">
                                 <div class="size-28 shrink-0 overflow-hidden rounded-xl bg-white sm:size-36 xl:size-40">
                                     <template x-if="cart_item.variantRecord?.image">

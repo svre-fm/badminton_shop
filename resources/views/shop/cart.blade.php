@@ -39,6 +39,7 @@
                         body: JSON.stringify({
                             quantity: quantity,
                             color: cart_item.color,
+                            tension: cart_item.racket_tension ?? cart_item.tension ?? 0,
                         }),
                     });
 
@@ -73,6 +74,7 @@
                         },
                         body: JSON.stringify({
                             color: cart_item.color,
+                            tension: cart_item.racket_tension ?? cart_item.tension ?? 0,
                         }),
                     });
 
@@ -95,7 +97,7 @@
                 const selectedItems = this.picked.map(item => ({
                     product_id: item.product_id,
                     color: item.color,
-                    racket_tension: item.racket_tension ?? null,
+                    racket_tension: item.racket_tension ?? item.tension ?? 0,
                 }));
 
                 sessionStorage.setItem(

@@ -14,7 +14,7 @@ class cart_item extends Model
 
     protected $primaryKey = 'customer_id';
 
-    protected array $primaryKeyColumns = ['customer_id', 'product_id', 'color'];
+    protected array $primaryKeyColumns = ['customer_id', 'product_id', 'color', 'racket_tension'];
 
     public $incrementing = false;
 
