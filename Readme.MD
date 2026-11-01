@@ -29,9 +29,10 @@ docker run --rm -u "$(id -u):$(id -g)" \
 ```
 ./vendor/bin/sail npm install
 ./vendor/bin/sail npm run build
+./vendor/bin/sail npm run dev
 ```
 
-# 7. สร้างตารางในฐานข้อมูล (+ ข้อมูลตัวอย่างถ้ามี seeder)
+# 7. สร้างตารางในฐานข้อมูล 
 ```
-./vendor/bin/sail artisan migrate:fresh --seed
+./vendor/bin/sail artisan npm run db:reset
 ```
