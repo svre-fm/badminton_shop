@@ -350,17 +350,20 @@ class ProductController extends Controller
             ->where('products.product_id', $product->product_id)
             ->exists() ?? false;
 
-        // จากของเพื่อน: คำสั่งซื้อที่ยังรีวิวสินค้านี้ได้
         $reviewableOrders = collect();
         if (auth()->check()) {
-            $reviewableOrders = auth()->user()->orders()
-                ->where('status', self::SOLD_STATUS)
-                ->whereHas('items', fn ($q) => $q->where('product_id', $product->product_id))
-                ->whereDoesntHave('reviews', fn ($q) => $q
-                    ->where('product_id', $product->product_id)
-                    ->where('customer_id', auth()->id()))
-                ->orderByDesc('order_date')
-                ->get(['order_no', 'order_date']);
+            $hasReviewed = DB::table('reviews')
+                ->where('customer_id', auth()->id())
+                ->where('product_id', $product->product_id)
+                ->exists();
+
+            if (! $hasReviewed) {
+                $reviewableOrders = auth()->user()->orders()
+                    ->where('status', self::SOLD_STATUS)
+                    ->whereHas('items', fn ($q) => $q->where('product_id', $product->product_id))
+                    ->orderByDesc('order_date')
+                    ->get(['order_no', 'order_date']);
+            }
         }
 
         return view('shop.product', [

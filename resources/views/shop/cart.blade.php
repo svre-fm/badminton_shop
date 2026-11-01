@@ -39,6 +39,7 @@
                         body: JSON.stringify({
                             quantity: quantity,
                             color: cart_item.color,
+                            tension: cart_item.racket_tension ?? cart_item.tension ?? 0,
                         }),
                     });
 
@@ -73,6 +74,7 @@
                         },
                         body: JSON.stringify({
                             color: cart_item.color,
+                            tension: cart_item.racket_tension ?? cart_item.tension ?? 0,
                         }),
                     });
 
@@ -106,6 +108,7 @@
                     for (const [field, value] of Object.entries({
                         product_id: item.product_id,
                         color: item.color,
+                        racket_tension: item.racket_tension ?? item.tension ?? 0,
                     })) {
                         const input = document.createElement('input');
                         input.type = 'hidden';

@@ -26,7 +26,8 @@ class CheckoutController extends Controller
                 foreach ($selectedItems as $item) {
                     $query->orWhere(function ($query) use ($item) {
                         $query->where('product_id', $item['product_id'])
-                            ->where('color', $item['color']);
+                            ->where('color', $item['color'])
+                            ->where('racket_tension', $item['racket_tension'] ?? 0);
                     });
                 }
             });
@@ -92,12 +93,14 @@ class CheckoutController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.color' => ['required', 'string', 'max:50'],
+            'items.*.racket_tension' => ['nullable', 'integer', 'min:0', 'max:50'],
         ]);
 
         $items = collect($validated['items'])
             ->map(fn ($item) => [
                 'product_id' => $item['product_id'],
                 'color' => $item['color'],
+                'racket_tension' => (int) ($item['racket_tension'] ?? 0),
             ])
             ->values();
 
@@ -106,7 +109,7 @@ class CheckoutController extends Controller
         }
 
         $uniqueItems = $items
-            ->unique(fn ($item) => $item['product_id'].'|'.$item['color'])
+            ->unique(fn ($item) => $item['product_id'].'|'.$item['color'].'|'.$item['racket_tension'])
             ->values();
 
         if ($uniqueItems->count() !== $items->count()) {
@@ -118,7 +121,8 @@ class CheckoutController extends Controller
                 foreach ($items as $item) {
                     $query->orWhere(function ($query) use ($item) {
                         $query->where('product_id', $item['product_id'])
-                            ->where('color', $item['color']);
+                            ->where('color', $item['color'])
+                            ->where('racket_tension', $item['racket_tension']);
                     });
                 }
             })
@@ -172,7 +176,8 @@ class CheckoutController extends Controller
                     foreach ($selectedItems as $item) {
                         $query->orWhere(function ($query) use ($item) {
                             $query->where('product_id', $item['product_id'])
-                                ->where('color', $item['color']);
+                                ->where('color', $item['color'])
+                                ->where('racket_tension', $item['racket_tension'] ?? 0);
                         });
                     }
                 });
@@ -253,7 +258,6 @@ class CheckoutController extends Controller
 
         $request->session()->forget('checkout.cart_items');
 
-        return redirect()->route('orders', ['status' => 'to_ship'])
-            ->with('status', "Order {$order->order_no} placed successfully.");
+        return redirect()->route('orders', ['status' => 'to_ship']);
     }
 }

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Database\Seeders\Support\SeedHelper;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * สร้างเฉพาะหัว order (total_price ใส่ 0 ไว้ก่อน)
@@ -19,7 +20,6 @@ class OrderSeeder extends Seeder
 
         $addresses = DB::table('delivery_addresses')->get()->groupBy('user_id');
         $today = Carbon::today();
-        $perDay = [];
         $rows = [];
         $demoStatuses = [
             SeedHelper::STATUS_TO_SHIP,
@@ -30,7 +30,7 @@ class OrderSeeder extends Seeder
 
         foreach (DB::table('users')->orderBy('id')->pluck('id') as $index => $userId) {
             $userAddresses = $addresses->get($userId);
-            if (!$userAddresses || $userAddresses->isEmpty()) {
+            if (! $userAddresses || $userAddresses->isEmpty()) {
                 continue;
             }
 
@@ -45,13 +45,10 @@ class OrderSeeder extends Seeder
                     : $this->randomStatus();
                 $age = $this->ageForStatus($status);
                 $date = $today->copy()->subDays($age);
-                $key = $date->format('Ymd');
-                $perDay[$key] = ($perDay[$key] ?? 0) + 1;
-
                 $address = SeedHelper::pick($userAddresses->all());
 
                 $rows[] = [
-                    'order_no' => sprintf('ORD%s-%04d', $key, $perDay[$key]),
+                    'order_no' => 'ORD-'.$date->format('Ymd').'-'.strtoupper(Str::random(10)),
                     'customer_id' => $userId,
                     'status' => $status,
                     'order_date' => $date->toDateString(),

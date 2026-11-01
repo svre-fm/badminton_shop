@@ -10,6 +10,9 @@
         ['key' => 'completed', 'label' => 'Completed', 'count' => 0],
         ['key' => 'cancelled', 'label' => 'Cancelled', 'count' => 0],
     ]);
+    $reviewed_product_ids = collect($reviewedProductIds ?? [])->map(fn ($id) => (int) $id)->all();
+    $review_button_products = [];
+    $variant_images = $variantImages ?? [];
 @endphp
 
 <x-layouts.shop title="Status Delivery">
@@ -60,14 +63,23 @@
                                     class="flex items-center gap-3 sm:gap-4"
                                 >
                                     <div class="size-16 shrink-0 overflow-hidden rounded-md bg-white sm:size-20">
-                                        @if (data_get($order_item, 'product.image'))
-                                            <img src="{{ data_get($order_item, 'product.image') }}" alt="{{ data_get($order_item, 'product.name') }}" class="size-full object-cover">
+                                        @php
+                                            $product_id = (int) data_get($order_item, 'product_id');
+                                            $review_button_available = data_get($order, 'status') === 'Complete'
+                                                && ! in_array($product_id, $reviewed_product_ids, true)
+                                                && ! isset($review_button_products[$product_id]);
+                                            $product_image = ($variant_images[$product_id.'|'.data_get($order_item, 'color')] ?? null)
+                                                ?: data_get($order_item, 'product.image');
+                                        @endphp
+                                        @if ($product_image)
+                                            <img src="{{ $product_image }}" alt="{{ data_get($order_item, 'product.name') }} - {{ data_get($order_item, 'color') }}" class="size-full object-cover">
                                         @endif
                                     </div>
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                             <h3 class="font-bold text-slate-800 sm:text-lg">{{ data_get($order_item, 'product.name') }}</h3>
-                                            @if (data_get($order, 'status') === 'Complete')
+                                            @if ($review_button_available)
+                                                @php $review_button_products[$product_id] = true; @endphp
                                                 <a
                                                     href="{{ route('review.create', ['product_id' => data_get($order_item, 'product_id'), 'order_no' => data_get($order, 'order_no')]) }}"
                                                     class="rounded border border-blue-400 px-1.5 py-0.5 text-[10px] leading-tight text-blue-700 transition hover:bg-blue-50 sm:text-xs"

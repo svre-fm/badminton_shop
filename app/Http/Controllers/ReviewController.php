@@ -8,22 +8,29 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class ReviewController extends Controller
 {
-    public function create(Request $request)
+    public function create(Request $request): RedirectResponse|View
     {
         $validated = $request->validate([
             'product_id' => ['required', 'integer', 'exists:products,product_id'],
             'order_no' => ['required', 'string', 'max:255'],
         ]);
 
-        $product = products::query()->findOrFail($validated['product_id']);
+        $productId = (int) $validated['product_id'];
+        $product = products::query()->where('product_id', $productId)->firstOrFail();
         $order = $request->user()->orders()
             ->where('order_no', $validated['order_no'])
             ->where('status', 'Complete')
-            ->whereHas('items', fn ($query) => $query->where('product_id', $product->product_id))
+            ->whereHas('items', fn ($query) => $query->where('product_id', $productId))
             ->firstOrFail();
+
+        if ($request->user()->reviews()->where('product_id', $productId)->exists()) {
+            return redirect()->route('orders')
+                ->with('status', 'You have already reviewed this product.');
+        }
 
         return view('shop.review', compact('product', 'order'));
     }
@@ -37,33 +44,38 @@ class ReviewController extends Controller
         ]);
 
         $user = $request->user();
-        $order = $user->orders()
-            ->where('order_no', $validated['order_no'])
-            ->where('status', 'Complete')
-            ->whereHas('items', fn ($query) => $query->where('product_id', $product->product_id))
-            ->first();
+        $productId = (int) $product->getKey();
 
-        abort_unless($order, 403, 'You can only review products from your completed orders.');
+        DB::transaction(function () use ($user, $productId, $validated): void {
+            $lockedProduct = products::query()
+                ->where('product_id', $productId)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $alreadyReviewed = DB::table('reviews')
-            ->where('customer_id', $user->id)
-            ->where('product_id', $product->product_id)
-            ->where('order_no', $order->order_no)
-            ->exists();
+            $order = $user->orders()
+                ->where('order_no', $validated['order_no'])
+                ->where('status', 'Complete')
+                ->whereHas('items', fn ($query) => $query->where('product_id', $productId))
+                ->first();
 
-        if ($alreadyReviewed) {
-            throw ValidationException::withMessages([
-                'order_no' => 'You have already reviewed this product for this order.',
+            if ($order === null) {
+                abort(403, 'You can only review products from your completed orders.');
+            }
+
+            if ($user->reviews()->where('product_id', $productId)->exists()) {
+                throw ValidationException::withMessages([
+                    'order_no' => 'You have already reviewed this product.',
+                ]);
+            }
+
+            $lockedProduct->reviews()->create([
+                'customer_id' => $user->id,
+                'order_no' => $validated['order_no'],
+                'star' => $validated['star'],
+                'date' => now()->toDateString(),
+                'comment' => $validated['comment'] ?? null,
             ]);
-        }
-
-        $product->reviews()->create([
-            'customer_id' => $user->id,
-            'order_no' => $order->order_no,
-            'star' => $validated['star'],
-            'date' => now()->toDateString(),
-            'comment' => $validated['comment'] ?? null,
-        ]);
+        });
 
         return redirect()
             ->route('shop.product', ['category' => $this->categorySlug($product->product_type), 'product_id' => $product->product_id])

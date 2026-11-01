@@ -24,6 +24,15 @@ class CreditCardController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'card_no' => preg_replace('/\D/', '', (string) $request->input('card_no')),
+        ]);
+
+        if (preg_match('/^(0[1-9]|1[0-2])\/(\d{2})$/', (string) $request->input('expiry_date'), $m)) {
+            $request->merge(['expiry_date' => '20'.$m[2].'-'.$m[1]]);
+        }
+
+        // 2) validate
         $validated = $request->validate([
             'card_no' => [
                 'required',
@@ -51,7 +60,7 @@ class CreditCardController extends Controller
             'expiry_date' => $validated['expiry_date'].'-01',
         ]);
 
-        return redirect()->route('checkout')->with('status', 'Card saved. You can select it at checkout.');
+        return redirect()->route('checkout');
     }
 
     public function destroy(Request $request, string $token)

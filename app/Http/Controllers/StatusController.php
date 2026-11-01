@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\productvariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
 class StatusController extends Controller
 {
@@ -15,7 +17,7 @@ class StatusController extends Controller
         'cancelled' => ['label' => 'Cancelled', 'statuses' => ['Cancelled']],
     ];
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $selectedStatus = $request->query('status', 'all');
         if (! is_string($selectedStatus) || ! isset(self::STATUS_GROUPS[$selectedStatus])) {
@@ -28,6 +30,25 @@ class StatusController extends Controller
             ->orderByDesc('order_date')
             ->orderByDesc('order_no')
             ->get();
+
+        $productIds = DB::table('order_items')
+            ->whereIn('order_no', $orders->pluck('order_no'))
+            ->distinct()
+            ->pluck('product_id');
+        $variantImages = productvariant::query()
+            ->whereIn('product_id', $productIds)
+            ->get()
+            ->mapWithKeys(fn (productvariant $variant) => [
+                $variant->product_id.'|'.$variant->color => $variant->image,
+            ])
+            ->all();
+
+        $reviewedProductIds = $request->user()
+            ->reviews()
+            ->distinct()
+            ->pluck('product_id')
+            ->map(fn ($productId) => (int) $productId)
+            ->all();
 
         $orderStatusCounts = DB::table('orders')
             ->where('customer_id', $request->user()->id)
@@ -44,6 +65,6 @@ class StatusController extends Controller
                     : collect($group['statuses'])->sum(fn ($status) => (int) ($orderStatusCounts[$status] ?? 0)),
             ]);
 
-        return view('shop.orders', compact('orders', 'selectedStatus', 'statusGroups'));
+        return view('shop.orders', compact('orders', 'selectedStatus', 'statusGroups', 'reviewedProductIds', 'variantImages'));
     }
 }

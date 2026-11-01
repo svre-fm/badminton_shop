@@ -35,8 +35,20 @@ class CartItemSeeder extends Seeder
             }
 
             $count = SeedHelper::weighted([1 => 40, 2 => 30, 3 => 20, 4 => 10]);
+            $seenKeys = [];
 
             foreach (SeedHelper::pickMany($variants, min($count, count($variants))) as $variant) {
+                $tension = $variant->product_type === 'RACKET'
+                    ? SeedHelper::racketTension((int) $variant->max_tension)
+                    : 0;
+
+                $key = implode('|', [$userId, $variant->product_id, $variant->color, $tension]);
+                if (isset($seenKeys[$key])) {
+                    continue;
+                }
+
+                $seenKeys[$key] = true;
+
                 $at = Carbon::now()->subDays(mt_rand(0, 30))->subMinutes(mt_rand(0, 1439))->toDateTimeString();
 
                 $rows[] = [
@@ -44,9 +56,7 @@ class CartItemSeeder extends Seeder
                     'product_id' => $variant->product_id,
                     'color' => $variant->color,
                     'quantity' => mt_rand(1, min(3, $variant->stock)),
-                    'racket_tension' => $variant->product_type === 'RACKET'
-                        ? SeedHelper::racketTension((int) $variant->max_tension)
-                        : 0,
+                    'racket_tension' => $tension,
                     'created_at' => $at,
                     'updated_at' => $at,
                 ];

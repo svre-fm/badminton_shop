@@ -39,6 +39,8 @@ class CartController extends Controller
             'tension' => ['nullable', 'integer', 'min:0', 'max:50'],
         ]);
 
+        $tension = (int) ($validated['tension'] ?? 0);
+
         $variant = productvariant::query()
             ->where('product_id', $validated['product_id'])
             ->where('color', $validated['color'])
@@ -48,6 +50,7 @@ class CartController extends Controller
         $cartItem = $user->cartItems()
             ->where('product_id', $variant->product_id)
             ->where('color', $variant->color)
+            ->where('racket_tension', $tension)
             ->first();
 
         $quantity = ($cartItem?->quantity ?? 0) + $validated['quantity'];
@@ -66,16 +69,17 @@ class CartController extends Controller
                 ->where('customer_id', $user->id)
                 ->where('product_id', $variant->product_id)
                 ->where('color', $variant->color)
+                ->where('racket_tension', $tension)
                 ->update([
                     'quantity' => $quantity,
-                    'racket_tension' => $validated['tension'] ?? null,
+                    'racket_tension' => $tension,
                 ]);
         } else {
             $user->cartItems()->create([
                 'product_id' => $variant->product_id,
                 'color' => $variant->color,
                 'quantity' => $quantity,
-                'racket_tension' => $validated['tension'] ?? null,
+                'racket_tension' => $tension,
             ]);
         }
 
@@ -87,11 +91,15 @@ class CartController extends Controller
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:1'],
             'color' => ['required', 'string', 'max:50'],
+            'tension' => ['nullable', 'integer', 'min:0', 'max:50'],
         ]);
+
+        $tension = (int) ($validated['tension'] ?? 0);
 
         $cartItem = $request->user()->cartItems()
             ->where('product_id', $productId)
             ->where('color', $validated['color'])
+            ->where('racket_tension', $tension)
             ->firstOrFail();
 
         $variant = productvariant::query()
@@ -112,6 +120,7 @@ class CartController extends Controller
             ->where('customer_id', $request->user()->id)
             ->where('product_id', $productId)
             ->where('color', $validated['color'])
+            ->where('racket_tension', $tension)
             ->update(['quantity' => $validated['quantity']]);
 
         return response()->json([
@@ -124,11 +133,15 @@ class CartController extends Controller
     {
         $validated = $request->validate([
             'color' => ['required', 'string', 'max:50'],
+            'tension' => ['nullable', 'integer', 'min:0', 'max:50'],
         ]);
+
+        $tension = (int) ($validated['tension'] ?? 0);
 
         $request->user()->cartItems()
             ->where('product_id', $productId)
             ->where('color', $validated['color'])
+            ->where('racket_tension', $tension)
             ->firstOrFail()
             ->delete();
 
