@@ -336,6 +336,8 @@ class ProductController extends Controller
             ->orderByDesc('no')
             ->get()
             ->map(fn ($review) => [
+                'no' => (int) $review->no,
+                'customer_id' => (int) $review->customer_id,
                 'star' => (int) $review->star,
                 'date' => (string) $review->date,
                 'comment' => $review->comment,
@@ -352,18 +354,14 @@ class ProductController extends Controller
 
         $reviewableOrders = collect();
         if (auth()->check()) {
-            $hasReviewed = DB::table('reviews')
-                ->where('customer_id', auth()->id())
-                ->where('product_id', $product->product_id)
-                ->exists();
-
-            if (! $hasReviewed) {
-                $reviewableOrders = auth()->user()->orders()
-                    ->where('status', self::SOLD_STATUS)
-                    ->whereHas('items', fn ($q) => $q->where('product_id', $product->product_id))
-                    ->orderByDesc('order_date')
-                    ->get(['order_no', 'order_date']);
-            }
+            $reviewableOrders = auth()->user()->orders()
+                ->where('status', self::SOLD_STATUS)
+                ->whereHas('items', fn ($q) => $q->where('product_id', $product->product_id))
+                ->whereDoesntHave('reviews', fn ($query) => $query
+                    ->where('customer_id', auth()->id())
+                    ->where('product_id', $product->product_id))
+                ->orderByDesc('order_date')
+                ->get(['order_no', 'order_date']);
         }
 
         return view('shop.product', [

@@ -40,17 +40,18 @@ Route::redirect('/dashboard', '/home');
 
 Route::middleware('auth')->group(function () {
     Route::redirect('/cart', '/cart_item')->name('cart.legacy');
-Route::get('/cart_item', [CartController::class, 'index'])->name('cart');
-Route::post('/cart_item', [CartController::class, 'store'])->name('cart.store');
-Route::patch('/cart_item/{productId}', [CartController::class, 'update'])
-    ->whereNumber('productId')
-    ->name('cart.update');
-Route::delete('/cart_item/{productId}', [CartController::class, 'destroy'])
-    ->whereNumber('productId')
-    ->name('cart.destroy');
+    Route::get('/cart_item', [CartController::class, 'index'])->name('cart');
+    Route::post('/cart_item', [CartController::class, 'store'])->name('cart.store');
+    Route::patch('/cart_item/{productId}', [CartController::class, 'update'])
+        ->whereNumber('productId')
+        ->name('cart.update');
+    Route::delete('/cart_item/{productId}', [CartController::class, 'destroy'])
+        ->whereNumber('productId')
+        ->name('cart.destroy');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout');
     Route::post('/checkout/items', [CheckoutController::class, 'selectItems'])->name('checkout.items');
+    Route::post('/checkout/buy-now', [CheckoutController::class, 'buyNow'])->name('checkout.buy-now');
     Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.place');
 
     Route::get('/add-address', [AddressController::class, 'create'])->name('address.create');
@@ -64,6 +65,8 @@ Route::delete('/cart_item/{productId}', [CartController::class, 'destroy'])
 
     Route::get('/review', [ReviewController::class, 'create'])->name('review.create');
     Route::post('/product/{product}/review', [ReviewController::class, 'store'])->whereNumber('product')->name('review.store');
+    Route::get('/product/{product}/review/{review}/edit', [ReviewController::class, 'edit'])->whereNumber('product')->whereNumber('review')->name('review.edit');
+    Route::put('/product/{product}/review/{review}', [ReviewController::class, 'update'])->whereNumber('product')->whereNumber('review')->name('review.update');
     Route::delete('/product/{product}/review/{review}', [ReviewController::class, 'destroy'])->whereNumber('product')->whereNumber('review')->name('review.destroy');
 
     Route::redirect('/favorites', '/favorite')->name('favorites.legacy');

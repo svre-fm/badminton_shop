@@ -36,7 +36,7 @@ class orders extends Model
         return [
             'customer_id' => 'integer',
             'delivery_id' => 'integer',
-            'order_date' => 'date',
+            'order_date' => 'datetime',
             'total_price' => 'decimal:2',
         ];
     }

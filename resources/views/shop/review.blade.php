@@ -1,4 +1,6 @@
-<x-layouts.shop title="Write a review">
+@php($editing = isset($review))
+
+<x-layouts.shop :title="$editing ? 'Edit your review' : 'Write a review'">
     <section class="mx-auto w-full max-w-2xl px-4 pb-16 pt-8 sm:px-8 sm:pt-12">
         <a href="{{ route('orders') }}" class="inline-flex items-center gap-2 text-sm font-medium text-brand hover:text-ink">
             <span aria-hidden="true">←</span> Back to order status
@@ -7,15 +9,19 @@
         <div class="mt-8 rounded-2xl border border-mist bg-white p-6 shadow-sm sm:p-10">
             <header class="text-center">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand">Your feedback</p>
-                <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">Write your review</h1>
+                <h1 class="mt-2 text-3xl font-bold tracking-tight text-ink">{{ $editing ? 'Edit your review' : 'Write your review' }}</h1>
                 <p class="mt-2 text-sm text-muted">
                     {{ $product->name }}
                 </p>
             </header>
 
-            <form x-data="{ rating: 0 }" method="POST" action="{{ route('review.store', $product) }}" class="mt-7 space-y-6">
+            <form x-data="{ rating: @js((int) old('star', data_get($review ?? null, 'star', 0))) }" method="POST" action="{{ $editing ? route('review.update', ['product' => $product->product_id, 'review' => $review->no]) : route('review.store', $product) }}" class="mt-7 space-y-6">
                 @csrf
-                <input type="hidden" name="order_no" value="{{ $order->order_no }}">
+                @if ($editing)
+                    @method('PUT')
+                @else
+                    <input type="hidden" name="order_no" value="{{ $order->order_no }}">
+                @endif
                 <fieldset>
                     <legend class="mb-3 text-sm font-medium text-ink">Your rating</legend>
                     <div class="flex justify-center gap-2" role="radiogroup" aria-label="Rating from 1 to 5 stars">
@@ -50,7 +56,7 @@
                         maxlength="2000"
                         class="w-full resize-y rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                         placeholder="Write your review..."
-                    ></textarea>
+                    >{{ old('comment', data_get($review ?? null, 'comment')) }}</textarea>
                 </div>
 
                 @if ($errors->any())
@@ -59,7 +65,7 @@
 
                 <div class="flex justify-center border-t border-mist pt-5">
                     <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-ink px-8 py-3 text-sm font-semibold text-white transition hover:bg-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 sm:w-auto sm:min-w-44">
-                        Submit
+                        {{ $editing ? 'Save changes' : 'Submit' }}
                     </button>
                 </div>
             </form>

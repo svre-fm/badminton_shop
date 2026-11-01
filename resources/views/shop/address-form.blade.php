@@ -44,9 +44,11 @@
                     type="tel"
                     autocomplete="tel"
                     maxlength="10"
-                    pattern="[0-9]{10}"
+                    pattern="[0-9]{1,10}"
+                    title="Enter up to 10 digits"
                     inputmode="numeric"
                     required
+                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 10)"
                     value="{{ old('phone', data_get($delivery_address, 'phone')) }}"
                     class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                     placeholder="Phone number"

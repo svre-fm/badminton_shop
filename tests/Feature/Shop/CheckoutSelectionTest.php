@@ -11,6 +11,105 @@ class CheckoutSelectionTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_order_history_sorts_orders_by_full_order_timestamp(): void
+    {
+        $user = User::factory()->create();
+
+        foreach ([
+            'ORD-OLDER' => '2026-10-31 23:59:59',
+            'ORD-NEWER' => '2026-11-01 00:00:01',
+            'ORD-LATEST' => '2026-11-01 18:30:00',
+        ] as $orderNo => $orderDate) {
+            DB::table('orders')->insert([
+                'order_no' => $orderNo,
+                'customer_id' => $user->id,
+                'status' => 'Complete',
+                'order_date' => $orderDate,
+                'delivery_id' => null,
+                'total_price' => 100,
+            ]);
+        }
+
+        $content = $this->actingAs($user)
+            ->get(route('orders'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertLessThan(strpos($content, 'ORD-NEWER'), strpos($content, 'ORD-LATEST'));
+        $this->assertLessThan(strpos($content, 'ORD-OLDER'), strpos($content, 'ORD-NEWER'));
+    }
+
+    public function test_buy_now_checks_out_the_requested_quantity_without_changing_cart_quantity(): void
+    {
+        $orderDate = now()->startOfDay()->setTime(14, 30, 45);
+        $this->travelTo($orderDate);
+
+        $user = User::factory()->create();
+        $address = $user->Delivery_address()->create([
+            'name' => 'Test Customer',
+            'phone' => '0812345678',
+            'address' => 'Test delivery address',
+        ]);
+        $productId = DB::table('products')->insertGetId([
+            'name' => 'Buy now grip',
+            'brand' => 'Test brand',
+            'detail' => 'Test product',
+            'price' => 100,
+            'image' => '/images/test-grip.png',
+            'product_type' => 'GRIP',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ], 'product_id');
+
+        DB::table('productvariants')->insert([
+            'product_id' => $productId,
+            'color' => 'Black',
+            'stock' => 8,
+        ]);
+        DB::table('cart_items')->insert([
+            'customer_id' => $user->id,
+            'product_id' => $productId,
+            'color' => 'Black',
+            'racket_tension' => 0,
+            'quantity' => 3,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('checkout.buy-now'), [
+                'product_id' => $productId,
+                'color' => 'Black',
+                'quantity' => 2,
+                'racket_tension' => 0,
+            ])
+            ->assertOk()
+            ->assertJsonPath('redirect', route('checkout'));
+
+        $this->get(route('checkout'))
+            ->assertOk()
+            ->assertSee('Buy now grip');
+
+        $this->post(route('checkout.place'), [
+            'delivery_id' => $address->delivery_id,
+            'payment_method' => 'CASH_ON_DELIVERY',
+        ])->assertRedirect(route('orders', ['status' => 'to_ship']));
+
+        $orderNo = DB::table('orders')->value('order_no');
+        $this->assertSame(
+            $orderDate->toDateTimeString(),
+            DB::table('orders')->where('order_no', $orderNo)->value('order_date'),
+        );
+        $this->assertSame(2, DB::table('order_items')->where('order_no', $orderNo)->value('quantity'));
+        $this->assertDatabaseHas('cart_items', [
+            'customer_id' => $user->id,
+            'product_id' => $productId,
+            'color' => 'Black',
+            'quantity' => 3,
+        ]);
+        $this->assertSame(6, DB::table('productvariants')->where('product_id', $productId)->value('stock'));
+    }
+
     public function test_order_numbers_use_the_previous_random_format(): void
     {
         $user = User::factory()->create();

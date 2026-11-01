@@ -122,7 +122,7 @@
                         this.tensionError = '';
                         return true;
                     },
-                    async addToCart(redirectToCart = false) {
+                    async addToCart(buyNow = false) {
                         if (!this.isAuthenticated) {
                             window.location.assign(this.loginUrl);
                             return;
@@ -132,6 +132,23 @@
                         this.busy = true;
                         this.notice = '';
                         try {
+                            if (buyNow) {
+                                const response = await fetch(@js(route('checkout.buy-now')), {
+                                    method: 'POST',
+                                    headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        product_id: @js(data_get($product, 'product_id')),
+                                        color: this.color,
+                                        quantity: Math.max(1, Number(this.quantity)),
+                                        racket_tension: this.requiresTension ? Number(this.tension) : 0,
+                                    }),
+                                });
+                                const data = await response.json().catch(() => ({}));
+                                if (!response.ok) throw new Error(data.message || 'Could not continue to checkout.');
+                                window.location.assign(data.redirect);
+                                return;
+                            }
+
                             const response = await fetch(this.cartUrl, {
                                 method: 'POST',
                                 headers: { 'X-CSRF-TOKEN': this.csrf, 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -139,8 +156,7 @@
                             });
                             const data = await response.json().catch(() => ({}));
                             if (!response.ok) throw new Error(data.message || 'Could not add this product to your cart.');
-                            if (redirectToCart) window.location.assign(@js(route('cart')));
-                            else this.notice = data.message || 'Product added to your cart.';
+                            this.notice = data.message || 'Product added to your cart.';
                         } catch (error) {
                             this.notice = error.message;
                         } finally {
@@ -331,11 +347,39 @@
                             : null;
                     @endphp
                     <li x-show="ratingFilter === null || ratingFilter === {{ data_get($review, 'star') }}" class="border-b border-muted/50 pb-4">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-xl">{{ data_get($review, 'customer.name') }} <span class="text-xs text-muted">{{ $review_date }}</span></p>
                                 <x-shop.star-rating :rating="data_get($review, 'star')" size="text-xl" />
                             </div>
+                            @if (auth()->check() && (int) data_get($review, 'customer_id') === (int) auth()->id())
+                                <div class="flex shrink-0 items-center gap-1">
+                                    <a
+                                        href="{{ route('review.edit', ['product' => data_get($product, 'product_id'), 'review' => data_get($review, 'no')]) }}"
+                                        class="rounded-md p-2 text-muted transition hover:bg-mist hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                                        aria-label="Edit your review"
+                                        title="Edit review"
+                                    >
+                                        <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 2.651 2.651M4 20l4.548-.91L19.5 8.138a1.875 1.875 0 0 0-2.652-2.652L5.897 16.44 4 20Z" />
+                                        </svg>
+                                    </a>
+                                    <form method="POST" action="{{ route('review.destroy', ['product' => data_get($product, 'product_id'), 'review' => data_get($review, 'no')]) }}" onsubmit="return confirm('Delete your review?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button
+                                            type="submit"
+                                            class="rounded-md p-2 text-muted transition hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                                            aria-label="Delete your review"
+                                            title="Delete review"
+                                        >
+                                            <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12m-10 0 .7 13h6.6L16 7M9 7V4h6v3m-5 4v5m4-5v5" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            @endif
                         </div>
                         <p class="mt-3 text-muted">{{ data_get($review, 'comment') }}</p>
                     </li>

@@ -10,8 +10,7 @@
         ['key' => 'completed', 'label' => 'Completed', 'count' => 0],
         ['key' => 'cancelled', 'label' => 'Cancelled', 'count' => 0],
     ]);
-    $reviewed_product_ids = collect($reviewedProductIds ?? [])->map(fn ($id) => (int) $id)->all();
-    $review_button_products = [];
+    $reviewed_product_keys = $reviewedProductKeys ?? [];
     $variant_images = $variantImages ?? [];
 @endphp
 
@@ -45,6 +44,7 @@
         @else
         <div class="mt-6 space-y-4">
             @foreach ($orders as $order)
+                @php $review_button_products = []; @endphp
                 <article
                     x-show="filter === 'all' || filter === statusKey(@js(data_get($order, 'status')))"
                     class="overflow-hidden rounded-md border border-slate-300 bg-[#faf9f8]"
@@ -52,7 +52,7 @@
                     <header class="flex items-center justify-between gap-4 border-b border-slate-300 bg-[#d5e7ff] px-3 py-1.5 text-sm sm:px-4 sm:text-base">
                         <h2 class="font-medium text-slate-700">Order_no : {{ data_get($order, 'order_no') }}</h2>
                         <span class="shrink-0 text-base font-bold text-blue-700 sm:text-lg">{{ $status_labels[data_get($order, 'status')] ?? data_get($order, 'status') }}</span>
-                        <span class="text-xs text-slate-500">{{ data_get($order, 'order_date') }}</span>
+                        <span class="text-xs text-slate-500">{{ data_get($order, 'order_date') ? \Illuminate\Support\Carbon::parse(data_get($order, 'order_date'))->toDateString() : '' }}</span>
                     </header>
 
                     <div class="px-4 pb-3 pt-2 sm:px-5">
@@ -66,7 +66,7 @@
                                         @php
                                             $product_id = (int) data_get($order_item, 'product_id');
                                             $review_button_available = data_get($order, 'status') === 'Complete'
-                                                && ! in_array($product_id, $reviewed_product_ids, true)
+                                                && ! in_array(data_get($order, 'order_no').'|'.$product_id, $reviewed_product_keys, true)
                                                 && ! isset($review_button_products[$product_id]);
                                             $product_image = ($variant_images[$product_id.'|'.data_get($order_item, 'color')] ?? null)
                                                 ?: data_get($order_item, 'product.image');

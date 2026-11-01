@@ -171,7 +171,7 @@
         </template>
 
         <p x-show="!cart_items.length" x-cloak class="py-10 text-muted">
-            Your cart is empty. <a href="{{ route('shop.index') }}" class="text-brand underline">Browse products</a>
+            Your cart is empty. <a href="{{ route('home') }}" class="text-brand underline">Browse products</a>
         </p>
 
         <div x-show="cart_items.length" x-cloak class="mt-8 flex flex-wrap items-center justify-end gap-5">

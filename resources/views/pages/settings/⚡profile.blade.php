@@ -152,8 +152,12 @@ new #[Layout('components.layouts.shop')] #[Title('My profile')] class extends Co
                             id="profile-phone"
                             wire:model="phone"
                             type="tel"
+                            inputmode="numeric"
                             autocomplete="tel"
-                            maxlength="32"
+                            maxlength="10"
+                            pattern="[0-9]*"
+                            x-data
+                            x-on:input="$el.value = $el.value.replace(/\D/g, '').slice(0, 10)"
                             class="w-full rounded-lg border border-muted/50 bg-white px-4 py-3 text-ink outline-none transition placeholder:text-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20"
                             placeholder="Add a phone number"
                         >

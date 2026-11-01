@@ -27,9 +27,12 @@ class ReviewController extends Controller
             ->whereHas('items', fn ($query) => $query->where('product_id', $productId))
             ->firstOrFail();
 
-        if ($request->user()->reviews()->where('product_id', $productId)->exists()) {
+        if ($request->user()->reviews()
+            ->where('product_id', $productId)
+            ->where('order_no', $order->order_no)
+            ->exists()) {
             return redirect()->route('orders')
-                ->with('status', 'You have already reviewed this product.');
+                ->with('status', 'You have already reviewed this product for this order.');
         }
 
         return view('shop.review', compact('product', 'order'));
@@ -62,9 +65,12 @@ class ReviewController extends Controller
                 abort(403, 'You can only review products from your completed orders.');
             }
 
-            if ($user->reviews()->where('product_id', $productId)->exists()) {
+            if ($user->reviews()
+                ->where('product_id', $productId)
+                ->where('order_no', $order->order_no)
+                ->exists()) {
                 throw ValidationException::withMessages([
-                    'order_no' => 'You have already reviewed this product.',
+                    'order_no' => 'You have already reviewed this product for this order.',
                 ]);
             }
 
@@ -80,23 +86,67 @@ class ReviewController extends Controller
         return redirect()
             ->route('shop.product', ['category' => $this->categorySlug($product->product_type), 'product_id' => $product->product_id])
             ->withFragment('reviews')
-            ->with('status', 'Your review has been saved.');
+            ->with('toast', [
+                'variant' => 'success',
+                'text' => 'Your review has been saved.',
+            ]);
+    }
+
+    public function edit(Request $request, products $product, int $review): View
+    {
+        $review = $this->ownedReview($request, $product, $review);
+
+        return view('shop.review', compact('product', 'review'));
+    }
+
+    public function update(Request $request, products $product, int $review): RedirectResponse
+    {
+        $validated = $request->validate([
+            'star' => ['required', 'integer', 'between:1,5'],
+            'comment' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $review = $this->ownedReview($request, $product, $review);
+        $review->update([
+            'star' => $validated['star'],
+            'comment' => $validated['comment'] ?? null,
+            'date' => now()->toDateString(),
+        ]);
+
+        return $this->productRedirect($product)
+            ->with('toast', [
+                'variant' => 'success',
+                'text' => 'Your review has been updated.',
+            ]);
     }
 
     public function destroy(Request $request, products $product, int $review): RedirectResponse
     {
-        $review = reviews::query()
+        $review = $this->ownedReview($request, $product, $review);
+
+        $review->delete();
+
+        return $this->productRedirect($product)
+            ->with('toast', [
+                'variant' => 'success',
+                'text' => 'Your review has been deleted.',
+            ]);
+    }
+
+    private function ownedReview(Request $request, products $product, int $review): reviews
+    {
+        return reviews::query()
             ->where('no', $review)
             ->where('product_id', $product->product_id)
             ->where('customer_id', $request->user()->id)
             ->firstOrFail();
+    }
 
-        $review->delete();
-
+    private function productRedirect(products $product): RedirectResponse
+    {
         return redirect()
             ->route('shop.product', ['category' => $this->categorySlug($product->product_type), 'product_id' => $product->product_id])
-            ->withFragment('reviews')
-            ->with('status', 'Your review has been deleted.');
+            ->withFragment('reviews');
     }
 
     private function categorySlug(string $type): string

@@ -38,7 +38,7 @@ class ReviewSeeder extends Seeder
 
         $today = Carbon::today();
 
-        // A customer can review a product only once, regardless of color or order.
+        // A customer can review a product once per order, regardless of color.
         $lines = DB::table('orders')
             ->join('order_items', 'order_items.order_no', '=', 'orders.order_no')
             ->join('products', 'products.product_id', '=', 'order_items.product_id')
@@ -57,7 +57,7 @@ class ReviewSeeder extends Seeder
         $rows = [];
 
         foreach ($lines as $line) {
-            $key = "{$line->customer_id}|{$line->product_id}";
+            $key = "{$line->customer_id}|{$line->product_id}|{$line->order_no}";
             if (isset($seen[$key])) {
                 continue;
             }

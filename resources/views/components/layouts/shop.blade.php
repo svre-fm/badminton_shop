@@ -35,6 +35,16 @@
             <flux:toast />
         </flux:toast.group>
     @endpersist
+    @if (session('toast'))
+        <div
+            x-data
+            x-init="$nextTick(() => $dispatch('toast-show', {
+                duration: 5000,
+                slots: { text: @js(session('toast.text')) },
+                dataset: { variant: @js(session('toast.variant')) },
+            }))"
+        ></div>
+    @endif
     @fluxScripts
 </body>
 </html>

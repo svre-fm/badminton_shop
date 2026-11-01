@@ -43,11 +43,10 @@ class StatusController extends Controller
             ])
             ->all();
 
-        $reviewedProductIds = $request->user()
+        $reviewedProductKeys = $request->user()
             ->reviews()
-            ->distinct()
-            ->pluck('product_id')
-            ->map(fn ($productId) => (int) $productId)
+            ->get(['product_id', 'order_no'])
+            ->map(fn ($review) => $review->order_no.'|'.(int) $review->product_id)
             ->all();
 
         $orderStatusCounts = DB::table('orders')
@@ -65,6 +64,6 @@ class StatusController extends Controller
                     : collect($group['statuses'])->sum(fn ($status) => (int) ($orderStatusCounts[$status] ?? 0)),
             ]);
 
-        return view('shop.orders', compact('orders', 'selectedStatus', 'statusGroups', 'reviewedProductIds', 'variantImages'));
+        return view('shop.orders', compact('orders', 'selectedStatus', 'statusGroups', 'reviewedProductKeys', 'variantImages'));
     }
 }

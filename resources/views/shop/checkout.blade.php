@@ -197,7 +197,7 @@
                     </ul>
                 </template>
                 <p x-show="!cart_items.length" x-cloak class="mt-5 text-base text-muted">
-                    No items selected. <a href="{{ route('cart') }}" class="font-medium text-brand underline">Return to cart</a>
+                    No items selected. <a href="{{ route('home') }}" class="font-medium text-brand underline">Return to home</a>
                 </p>
             </section>
 
@@ -322,7 +322,7 @@
                     </div>
                     <div>
                         <label for="checkout-address-phone" class="mb-2 block text-sm font-medium text-ink">Phone number</label>
-                        <input id="checkout-address-phone" x-model="addressForm.phone" type="tel" maxlength="10" pattern="[0]{1}[0-9]{9}" required class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
+                        <input id="checkout-address-phone" x-model="addressForm.phone" x-on:input="addressForm.phone = $event.target.value.replace(/\D/g, '').slice(0, 10)" type="tel" inputmode="numeric" maxlength="10" pattern="[0-9]{1,10}" title="Enter up to 10 digits" required class="w-full rounded-lg border border-muted/50 px-4 py-3 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20">
                         <p x-show="addressErrors.phone" x-text="addressErrors.phone?.[0]" role="alert" class="mt-1 text-sm text-red-700"></p>
                     </div>
                     <div>

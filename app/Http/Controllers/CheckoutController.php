@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\orders;
+use App\Models\products;
 use App\Models\productvariant;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,50 +19,72 @@ class CheckoutController extends Controller
     public function show(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+        $buyNowItem = session('checkout.buy_now');
         $selectedItems = session('checkout.cart_items');
 
-        $cartItemsQuery = $user->cartItems()->with('product');
+        if (is_array($buyNowItem)) {
+            $product = products::query()->find($buyNowItem['product_id']);
+            $variant = productvariant::query()
+                ->where('product_id', $buyNowItem['product_id'])
+                ->where('color', $buyNowItem['color'])
+                ->first();
 
-        if (is_array($selectedItems)) {
-            $cartItemsQuery->where(function ($query) use ($selectedItems) {
-                foreach ($selectedItems as $item) {
-                    $query->orWhere(function ($query) use ($item) {
-                        $query->where('product_id', $item['product_id'])
-                            ->where('color', $item['color'])
-                            ->where('racket_tension', $item['racket_tension'] ?? 0);
-                    });
-                }
-            });
-        }
+            if (! $product || ! $variant || $buyNowItem['quantity'] > $variant->stock) {
+                $request->session()->forget('checkout.buy_now');
 
-        $cartItems = $cartItemsQuery->get();
-
-        if (
-            $cartItems->isEmpty()
-            || (is_array($selectedItems) && (
-                $selectedItems === []
-                || $cartItems->count() !== count($selectedItems)
-            ))
-        ) {
-            if (is_array($selectedItems)) {
-                $request->session()->forget('checkout.cart_items');
+                return redirect()->route('cart')
+                    ->with('error', 'This product is no longer available in the requested quantity.');
             }
 
-            return redirect()->route('cart')
-                ->with('error', $cartItems->isEmpty()
-                    ? 'Add products to your cart before checkout.'
-                    : 'Some selected items are no longer in your cart. Please select your items again.');
-        }
+            $cartItems = collect([[
+                ...$buyNowItem,
+                'product' => $product,
+                'variantRecord' => $variant,
+            ]]);
+        } else {
+            $cartItemsQuery = $user->cartItems()->with('product');
 
-        $variants = productvariant::query()
-            ->whereIn('product_id', $cartItems->pluck('product_id'))
-            ->get()
-            ->keyBy(fn ($variant) => $variant->product_id.'_'.$variant->color);
+            if (is_array($selectedItems)) {
+                $cartItemsQuery->where(function ($query) use ($selectedItems) {
+                    foreach ($selectedItems as $item) {
+                        $query->orWhere(function ($query) use ($item) {
+                            $query->where('product_id', $item['product_id'])
+                                ->where('color', $item['color'])
+                                ->where('racket_tension', $item['racket_tension'] ?? 0);
+                        });
+                    }
+                });
+            }
 
-        foreach ($cartItems as $item) {
-            $item->variantRecord = $variants->get(
-                $item->product_id.'_'.$item->color
-            );
+            $cartItems = $cartItemsQuery->get();
+
+            if (
+                $cartItems->isEmpty()
+                || (is_array($selectedItems) && (
+                    $selectedItems === []
+                    || $cartItems->count() !== count($selectedItems)
+                ))
+            ) {
+                if (is_array($selectedItems)) {
+                    $request->session()->forget('checkout.cart_items');
+                }
+
+                return redirect()->route('cart')
+                    ->with('error', $cartItems->isEmpty()
+                        ? 'Add products to your cart before checkout.'
+                        : 'Some selected items are no longer in your cart. Please select your items again.');
+            }
+
+            $variants = productvariant::query()
+                ->whereIn('product_id', $cartItems->pluck('product_id'))
+                ->get()
+                ->keyBy(fn ($variant) => $variant->product_id.'_'.$variant->color);
+
+            foreach ($cartItems as $item) {
+                $item->variantRecord = $variants->get(
+                    $item->product_id.'_'.$item->color
+                );
+            }
         }
 
         $deliveryAddresses = $user->Delivery_address()->get();
@@ -133,8 +157,40 @@ class CheckoutController extends Controller
         }
 
         $request->session()->put('checkout.cart_items', $items->all());
+        $request->session()->forget('checkout.buy_now');
 
         return redirect()->route('checkout');
+    }
+
+    public function buyNow(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'product_id' => ['required', 'integer', 'exists:products,product_id'],
+            'color' => ['required', 'string', 'max:50'],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'racket_tension' => ['nullable', 'integer', 'min:0', 'max:50'],
+        ]);
+
+        $variant = productvariant::query()
+            ->where('product_id', $validated['product_id'])
+            ->where('color', $validated['color'])
+            ->firstOrFail();
+
+        if ($validated['quantity'] > $variant->stock) {
+            throw ValidationException::withMessages([
+                'quantity' => "Only {$variant->stock} item(s) are currently in stock.",
+            ]);
+        }
+
+        $request->session()->put('checkout.buy_now', [
+            'product_id' => $validated['product_id'],
+            'color' => $validated['color'],
+            'quantity' => $validated['quantity'],
+            'racket_tension' => (int) ($validated['racket_tension'] ?? 0),
+        ]);
+        $request->session()->forget('checkout.cart_items');
+
+        return response()->json(['redirect' => route('checkout')]);
     }
 
     public function placeOrder(Request $request)
@@ -168,30 +224,43 @@ class CheckoutController extends Controller
         }
 
         $selectedItems = $request->session()->get('checkout.cart_items');
+        $buyNowItem = $request->session()->get('checkout.buy_now');
 
-        $order = DB::transaction(function () use ($user, $address, $card, $selectedItems, $validated) {
-            $cartQuery = $user->cartItems()->with('product');
-            if (is_array($selectedItems)) {
-                $cartQuery->where(function ($query) use ($selectedItems) {
-                    foreach ($selectedItems as $item) {
-                        $query->orWhere(function ($query) use ($item) {
-                            $query->where('product_id', $item['product_id'])
-                                ->where('color', $item['color'])
-                                ->where('racket_tension', $item['racket_tension'] ?? 0);
-                        });
-                    }
-                });
-            }
+        $order = DB::transaction(function () use ($user, $address, $card, $selectedItems, $buyNowItem, $validated) {
+            if (is_array($buyNowItem)) {
+                $product = products::query()->find($buyNowItem['product_id']);
+                if (! $product) {
+                    throw ValidationException::withMessages(['items' => 'The selected product is no longer available.']);
+                }
 
-            $cartItems = $cartQuery->lockForUpdate()->get();
-            if (
-                $cartItems->isEmpty()
-                || (is_array($selectedItems) && (
-                    $selectedItems === []
-                    || $cartItems->count() !== count($selectedItems)
-                ))
-            ) {
-                throw ValidationException::withMessages(['items' => 'Your selected cart items have changed. Please review your cart.']);
+                $cartItems = collect([(object) [
+                    ...$buyNowItem,
+                    'product' => $product,
+                ]]);
+            } else {
+                $cartQuery = $user->cartItems()->with('product');
+                if (is_array($selectedItems)) {
+                    $cartQuery->where(function ($query) use ($selectedItems) {
+                        foreach ($selectedItems as $item) {
+                            $query->orWhere(function ($query) use ($item) {
+                                $query->where('product_id', $item['product_id'])
+                                    ->where('color', $item['color'])
+                                    ->where('racket_tension', $item['racket_tension'] ?? 0);
+                            });
+                        }
+                    });
+                }
+
+                $cartItems = $cartQuery->lockForUpdate()->get();
+                if (
+                    $cartItems->isEmpty()
+                    || (is_array($selectedItems) && (
+                        $selectedItems === []
+                        || $cartItems->count() !== count($selectedItems)
+                    ))
+                ) {
+                    throw ValidationException::withMessages(['items' => 'Your selected cart items have changed. Please review your cart.']);
+                }
             }
 
             $orderItems = [];
@@ -220,12 +289,13 @@ class CheckoutController extends Controller
                 ];
             }
 
-            $orderNo = 'ORD-'.now()->format('Ymd').'-'.strtoupper(Str::random(10));
+            $orderDate = now();
+            $orderNo = 'ORD-'.$orderDate->format('Ymd').'-'.strtoupper(Str::random(10));
             $order = orders::query()->create([
                 'order_no' => $orderNo,
                 'customer_id' => $user->id,
                 'status' => 'To ship',
-                'order_date' => now()->toDateString(),
+                'order_date' => $orderDate,
                 'delivery_id' => $address->delivery_id,
                 'total_price' => round($total, 2),
             ]);
@@ -251,12 +321,15 @@ class CheckoutController extends Controller
                 'updated_at' => now(),
             ]);
 
-            $cartItems->each->delete();
+            if (! is_array($buyNowItem)) {
+                $cartItems->each->delete();
+            }
 
             return $order;
         });
 
         $request->session()->forget('checkout.cart_items');
+        $request->session()->forget('checkout.buy_now');
 
         return redirect()->route('orders', ['status' => 'to_ship']);
     }

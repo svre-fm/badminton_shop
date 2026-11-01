@@ -51,7 +51,7 @@ class OrderSeeder extends Seeder
                     'order_no' => 'ORD-'.$date->format('Ymd').'-'.strtoupper(Str::random(10)),
                     'customer_id' => $userId,
                     'status' => $status,
-                    'order_date' => $date->toDateString(),
+                    'order_date' => SeedHelper::randomTime($date)->toDateTimeString(),
                     'delivery_id' => $address->delivery_id,
                     'total_price' => 0,
                 ];

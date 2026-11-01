@@ -22,7 +22,7 @@ class AddressController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'regex:/^[0-9]{1,10}$/'],
             'address' => ['required', 'string', 'max:2000'],
         ]);
 
@@ -56,7 +56,7 @@ class AddressController extends Controller
         $address = $request->user()->Delivery_address()->findOrFail($address);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'phone' => ['required', 'string', 'max:20'],
+            'phone' => ['required', 'string', 'regex:/^[0-9]{1,10}$/'],
             'address' => ['required', 'string', 'max:2000'],
         ]);
         $address->update($validated);

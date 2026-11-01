@@ -44,6 +44,36 @@ class AddressManagementTest extends TestCase
         $this->assertDatabaseMissing('delivery_addresses', ['delivery_id' => $addressId]);
     }
 
+    public function test_address_phone_accepts_only_up_to_ten_digits_on_create_and_update(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        foreach (['08123abc45', '08123456789'] as $phone) {
+            $this->postJson(route('address.store'), [
+                'name' => 'Recipient',
+                'phone' => $phone,
+                'address' => 'Delivery address',
+            ])->assertUnprocessable()
+                ->assertJsonValidationErrors('phone');
+        }
+
+        $addressId = $user->Delivery_address()->create([
+            'name' => 'Recipient',
+            'phone' => '0812345678',
+            'address' => 'Delivery address',
+        ])->delivery_id;
+
+        foreach (['08123abc45', '08123456789'] as $phone) {
+            $this->putJson(route('address.update', ['address' => $addressId]), [
+                'name' => 'Recipient',
+                'phone' => $phone,
+                'address' => 'Delivery address',
+            ])->assertUnprocessable()
+                ->assertJsonValidationErrors('phone');
+        }
+    }
+
     public function test_checkout_address_drawer_can_edit_addresses_without_a_page_refresh(): void
     {
         $user = User::factory()->create();
@@ -80,6 +110,7 @@ class AddressManagementTest extends TestCase
             ->assertSee('openNewAddressForm()', false)
             ->assertSee('openEditAddressForm(delivery_address)', false)
             ->assertSee('saveAddress()', false)
-            ->assertSee('this.delivery_addresses.splice(index, 1, savedAddress)', false);
+            ->assertSee('this.delivery_addresses.splice(index, 1, savedAddress)', false)
+            ->assertSee('slice(0, 10)', false);
     }
 }
