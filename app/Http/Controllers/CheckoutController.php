@@ -14,7 +14,6 @@ use Illuminate\View\View;
 
 class CheckoutController extends Controller
 {
-    
     public function show(Request $request): View|RedirectResponse
     {
         $user = $request->user();
@@ -35,19 +34,31 @@ class CheckoutController extends Controller
 
         $cartItems = $cartItemsQuery->get();
 
-        if ($cartItems->isEmpty()) {
+        if (
+            $cartItems->isEmpty()
+            || (is_array($selectedItems) && (
+                $selectedItems === []
+                || $cartItems->count() !== count($selectedItems)
+            ))
+        ) {
+            if (is_array($selectedItems)) {
+                $request->session()->forget('checkout.cart_items');
+            }
+
             return redirect()->route('cart')
-                ->with('error', 'Add products to your cart before checkout.');
+                ->with('error', $cartItems->isEmpty()
+                    ? 'Add products to your cart before checkout.'
+                    : 'Some selected items are no longer in your cart. Please select your items again.');
         }
 
         $variants = productvariant::query()
             ->whereIn('product_id', $cartItems->pluck('product_id'))
             ->get()
-            ->keyBy(fn ($variant) => $variant->product_id . '_' . $variant->color);
+            ->keyBy(fn ($variant) => $variant->product_id.'_'.$variant->color);
 
         foreach ($cartItems as $item) {
             $item->variantRecord = $variants->get(
-                $item->product_id . '_' . $item->color
+                $item->product_id.'_'.$item->color
             );
         }
 
@@ -75,18 +86,15 @@ class CheckoutController extends Controller
         ));
     }
 
-
     public function selectItems(Request $request)
     {
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.color' => ['required', 'string', 'max:50'],
-            'items.*.selected' => ['sometimes', 'boolean'],
         ]);
 
         $items = collect($validated['items'])
-            ->filter(fn ($item) => ! array_key_exists('selected', $item) || filter_var($item['selected'], FILTER_VALIDATE_BOOLEAN))
             ->map(fn ($item) => [
                 'product_id' => $item['product_id'],
                 'color' => $item['color'],
@@ -171,7 +179,13 @@ class CheckoutController extends Controller
             }
 
             $cartItems = $cartQuery->lockForUpdate()->get();
-            if ($cartItems->isEmpty() || (is_array($selectedItems) && $cartItems->count() !== count($selectedItems))) {
+            if (
+                $cartItems->isEmpty()
+                || (is_array($selectedItems) && (
+                    $selectedItems === []
+                    || $cartItems->count() !== count($selectedItems)
+                ))
+            ) {
                 throw ValidationException::withMessages(['items' => 'Your selected cart items have changed. Please review your cart.']);
             }
 

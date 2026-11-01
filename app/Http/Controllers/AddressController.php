@@ -26,7 +26,18 @@ class AddressController extends Controller
             'address' => ['required', 'string', 'max:2000'],
         ]);
 
-        $request->user()->Delivery_address()->create($validated);
+        $address = $request->user()->Delivery_address()->create($validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'address' => [
+                    'delivery_id' => $address->delivery_id,
+                    'name' => $address->name,
+                    'phone' => $address->phone,
+                    'address' => $address->address,
+                ],
+            ], 201);
+        }
 
         return redirect()->route('checkout')->with('status', 'Delivery address saved.');
     }
@@ -50,12 +61,27 @@ class AddressController extends Controller
         ]);
         $address->update($validated);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'address' => [
+                    'delivery_id' => $address->delivery_id,
+                    'name' => $address->name,
+                    'phone' => $address->phone,
+                    'address' => $address->address,
+                ],
+            ]);
+        }
+
         return redirect()->route('checkout')->with('status', 'Address updated.');
     }
 
     public function destroy(Request $request, int $address)
     {
         $request->user()->Delivery_address()->findOrFail($address)->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['deleted' => true]);
+        }
 
         return redirect()->route('checkout')->with('status', 'Address deleted.');
     }

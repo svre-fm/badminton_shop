@@ -92,18 +92,31 @@
             purchase() {
                 if (!this.picked.length) return;
 
-                const selectedItems = this.picked.map(item => ({
-                    product_id: item.product_id,
-                    color: item.color,
-                    racket_tension: item.racket_tension ?? null,
-                }));
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = @js(route('checkout.items'));
 
-                sessionStorage.setItem(
-                    'checkout_items',
-                    JSON.stringify(selectedItems)
-                );
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = @js(csrf_token());
+                form.appendChild(csrf);
 
-                window.location.href = @js(route('checkout'));
+                this.picked.forEach((item, index) => {
+                    for (const [field, value] of Object.entries({
+                        product_id: item.product_id,
+                        color: item.color,
+                    })) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = `items[${index}][${field}]`;
+                        input.value = value;
+                        form.appendChild(input);
+                    }
+                });
+
+                document.body.appendChild(form);
+                form.submit();
             }
         }"
     >
