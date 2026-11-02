@@ -136,7 +136,7 @@
                         <li>
                             <a href="{{ route('login', $returnQuery) }}" class="flex items-center gap-3 px-3 py-2 hover:bg-mist hover:text-ink">
                                 <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17-5-5 5-5"/><path d="M5 12h12"/>
+                                    <path d="m10 17 5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
                                 </svg>
                                 Log in
                             </a>
