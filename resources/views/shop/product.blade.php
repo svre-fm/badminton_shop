@@ -44,7 +44,11 @@
                     variants: @js(collect(data_get($product, 'product_variants', []))->map(fn ($v) => [
                         'color' => data_get($v, 'color'),
                         'image' => data_get($v, 'image'),
+                        'stock' => data_get($v, 'stock'),
                     ])->values()),
+                    get selectedStock() {
+                        return this.variants.find(variant => variant.color === this.color)?.stock ?? null;
+                    },
                     mainFallback: @js(data_get($product, 'image')),
                     activeImage: null,
                     get gallery() {
@@ -228,7 +232,12 @@
                     </span>
                 @endif
             </div>
-            <x-shop.price :amount="data_get($product, 'price')" :decimals="2" class="mt-2 text-4xl font-bold text-brand" />
+            <div class="mt-2 flex flex-wrap items-baseline gap-3">
+                <x-shop.price :amount="data_get($product, 'price')" :decimals="2" class="text-4xl font-bold text-brand" />
+                <p class="text-sm text-muted" aria-live="polite">
+                    Stock: <span x-text="selectedStock ?? 'Unavailable'"></span>
+                </p>
+            </div>
 
             @if ($requires_tension)
             <h2 class="mt-6 text-2xl">Tension (lbs)</h2>
